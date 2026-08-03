@@ -1,0 +1,121 @@
+# Live NFL Scores — Stream Deck Plugin
+
+A Stream Deck plugin that shows live NFL scores directly on your buttons. Each button tracks one team and updates automatically every 30 seconds.
+
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.0-green)
+
+---
+
+## Features
+
+- **Live scores** — shows away score, home score, quarter, and game clock while a game is in progress
+- **Possession indicator** — the team with the ball is shown in brown, turning orange if they're in the red zone
+- **Two-minute warning** — the clock turns red during the final 2:00 of the 2nd and 4th quarters
+- **Pre-game** — shows the matchup (e.g. `DEN @ KC`) and scheduled kickoff day/time
+- **Final scores** — shows the final score with a "Final" label, including OT labeling for overtime games
+- **Score-change flash** — when a team scores, the button flashes in that team's primary color
+- **End-of-game fireworks** — a short celebratory animation in the winning team's colors plays when the game ends
+- **Gamecast shortcut** — press any button to open that game directly in ESPN Gamecast
+- **Bye-week shortcut** — if your team has no game scheduled, pressing the button opens that team's full schedule on ESPN instead
+- **No-flicker updates** — buttons only redraw when the display actually changes
+- **Multi-button support** — add as many team buttons as you want, each refreshes independently
+- **All 32 NFL teams** across all 8 divisions (AFC East, North, South, West and NFC East, North, South, West)
+
+---
+
+## Requirements
+
+- [Elgato Stream Deck](https://www.elgato.com/stream-deck) hardware
+- [Stream Deck software](https://www.elgato.com/downloads) version 6.9 or later (Mac or Windows)
+- No account or API key required — the plugin uses ESPN's free public scoreboard API
+
+---
+
+## Installation
+
+1. Download the latest **`Live NFL Scores.streamDeckPlugin`** from the [Releases](../../releases) page
+2. Double-click the file — Stream Deck will install it automatically
+3. The plugin will appear in the Stream Deck action picker under **Live NFL Scores**
+
+---
+
+## Setup
+
+1. Drag the **Live NFL Scores** action onto any button
+2. In the settings panel on the right, find your team by typing into the search box or by picking a division and then a team from the dropdowns
+3. That's it — the button will load your team's current or upcoming game within a few seconds and refresh every 30 seconds from there
+
+---
+
+## What the Button Shows
+
+**Before the game:**
+```
+DEN @ KC
+Sun 1:00 PM
+```
+
+**Live game:**
+```
+DEN    7
+KC    17
+Q3 8:42
+```
+The team with the ball is colored brown (orange in the red zone); the clock turns red during the two-minute warning.
+
+**Final score:**
+```
+DEN    7
+KC    24
+ Final
+```
+
+**Bye week:**
+```
+ KC
+No Game
+```
+Pressing the button in this state opens that team's schedule on ESPN.
+
+---
+
+## How It Works
+
+The plugin polls [ESPN's public NFL scoreboard API](https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard) once every 30 seconds per button. No API key or account is required. The plugin is fully self-contained — it uses only Node.js built-in modules and requires no external dependencies.
+
+Because NFL teams play roughly once per week rather than daily, the plugin queries a rolling 21-day window (ten days back, ten days ahead) and picks the most relevant game for your team: a game in progress takes priority over an upcoming game, which takes priority over last week's final — so the button holds onto a result until the next game appears on the schedule.
+
+---
+
+## Uninstalling
+
+Open Stream Deck → Preferences → Plugins, select **Live NFL Scores**, and click the **−** button.
+
+---
+
+## Contributing
+
+Bug reports and feature requests are welcome — open an [Issue](../../issues) to get started.
+
+---
+
+## Changelog
+
+**1.0.0.0**
+- Initial release — live scores, possession indicator, red zone highlighting, pre-game/final states, score-change flash, end-of-game fireworks, Gamecast shortcut, and all 32 NFL teams across 8 divisions
+
+---
+
+## Disclaimer
+
+This plugin is not affiliated with, endorsed by, or sponsored by the NFL, ESPN, or any team. All data is sourced from ESPN's public scoreboard API and is subject to ESPN's terms of use. This plugin is intended for individual, personal, non-commercial use only.
+
+---
+
+## Credits
+
+Created by **T.J. Lauerman aka ThatSportsGamer**
+
+Created with Claude Cowork by Anthropic
+
+Data provided by [ESPN](https://www.espn.com/nfl/)

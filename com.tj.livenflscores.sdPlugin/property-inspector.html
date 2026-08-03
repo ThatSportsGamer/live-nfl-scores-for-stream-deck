@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>NFL Score Settings</title>
+    <style>
+        :root {
+            --bg:        #1e1e1e;
+            --surface:   #2c2c2c;
+            --border:    #444;
+            --text:      #d4d4d4;
+            --accent:    #1D3557;
+            --accent-hi: #013369;
+            --radius:    6px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 13px;
+            padding: 12px;
+        }
+
+        h2 {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: #fff;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            color: #aaa;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        .field { margin-bottom: 10px; }
+
+        /* ── Search ── */
+        .search-wrap { position: relative; }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 7px 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        input[type="text"]::placeholder { color: #666; }
+        input[type="text"]:focus { outline: none; border-color: var(--accent-hi); }
+
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0; right: 0;
+            background: var(--surface);
+            border: 1px solid var(--accent-hi);
+            border-top: none;
+            border-radius: 0 0 var(--radius) var(--radius);
+            max-height: 180px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+        }
+
+        .autocomplete-list .ac-item {
+            padding: 7px 10px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text);
+            border-bottom: 1px solid #333;
+        }
+
+        .autocomplete-list .ac-item:last-child { border-bottom: none; }
+        .autocomplete-list .ac-item:hover,
+        .autocomplete-list .ac-item.active { background: var(--accent); color: #fff; }
+
+        /* ── Divider ── */
+        .or-divider {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 12px 0;
+            color: #555;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+        .or-divider::before,
+        .or-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── Selects ── */
+        select {
+            width: 100%;
+            padding: 7px 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text);
+            font-size: 13px;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23aaa' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+
+        select:focus { outline: none; border-color: var(--accent-hi); }
+
+        /* ── Selected team banner ── */
+        .selected-team {
+            margin-top: 10px;
+            padding: 8px 10px;
+            background: var(--surface);
+            border-left: 3px solid var(--accent-hi);
+            border-radius: var(--radius);
+            font-size: 12px;
+            color: #ccc;
+            display: none;
+        }
+
+        .selected-team span { font-weight: bold; color: #fff; }
+
+        /* ── Info box ── */
+        .info-box {
+            margin-top: 14px;
+            padding: 9px 11px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent-hi);
+            border-radius: var(--radius);
+            font-size: 11px;
+            color: #999;
+            line-height: 1.5;
+        }
+
+        .info-box strong { color: var(--text); }
+    </style>
+</head>
+<body>
+
+<h2>🏈 Live NFL Scores</h2>
+
+<!-- ── Search ── -->
+<div class="field">
+    <label for="searchBox">Search</label>
+    <div class="search-wrap">
+        <input type="text" id="searchBox" placeholder="e.g. Chiefs, Kansas City, Eagles…" autocomplete="off"/>
+        <div class="autocomplete-list" id="autocompleteList"></div>
+    </div>
+</div>
+
+<div class="or-divider">or browse by division</div>
+
+<!-- ── Division + Team dropdowns ── -->
+<div class="field">
+    <label for="confSelect">Division</label>
+    <select id="confSelect">
+        <option value="">All Divisions</option>
+        <option value="AFC East">AFC East</option>
+        <option value="AFC North">AFC North</option>
+        <option value="AFC South">AFC South</option>
+        <option value="AFC West">AFC West</option>
+        <option value="NFC East">NFC East</option>
+        <option value="NFC North">NFC North</option>
+        <option value="NFC South">NFC South</option>
+        <option value="NFC West">NFC West</option>
+    </select>
+</div>
+
+<div class="field">
+    <label for="teamSelect">Team</label>
+    <select id="teamSelect">
+        <option value="">— Select a team —</option>
+    </select>
+</div>
+
+<div class="selected-team" id="selectedTeamInfo">
+    Tracking: <span id="selectedTeamName"></span>
+</div>
+
+<div class="info-box">
+    <strong>How it works:</strong><br>
+    • Scores refresh automatically every <strong>30 seconds</strong><br>
+    • Press the button anytime to refresh immediately, or to open the game in ESPN Gamecast<br>
+    • Shows score, quarter, clock, and possession during live games<br>
+    • Shows matchup and kickoff time before the game<br>
+    • Red-zone highlighting and a final score with OT label when the game ends
+</div>
+
+<script>
+    // ── Team data ─────────────────────────────────────────────────────────────
+    var TEAMS = [
+        // AFC East
+        { value: "2",  abbr: "BUF", name: "Buffalo Bills",        conf: "AFC East" },
+        { value: "15", abbr: "MIA", name: "Miami Dolphins",       conf: "AFC East" },
+        { value: "17", abbr: "NE",  name: "New England Patriots", conf: "AFC East" },
+        { value: "20", abbr: "NYJ", name: "New York Jets",        conf: "AFC East" },
+        // AFC North
+        { value: "33", abbr: "BAL", name: "Baltimore Ravens",     conf: "AFC North" },
+        { value: "4",  abbr: "CIN", name: "Cincinnati Bengals",   conf: "AFC North" },
+        { value: "5",  abbr: "CLE", name: "Cleveland Browns",     conf: "AFC North" },
+        { value: "23", abbr: "PIT", name: "Pittsburgh Steelers",  conf: "AFC North" },
+        // AFC South
+        { value: "34", abbr: "HOU", name: "Houston Texans",       conf: "AFC South" },
+        { value: "11", abbr: "IND", name: "Indianapolis Colts",   conf: "AFC South" },
+        { value: "30", abbr: "JAX", name: "Jacksonville Jaguars", conf: "AFC South" },
+        { value: "10", abbr: "TEN", name: "Tennessee Titans",     conf: "AFC South" },
+        // AFC West
+        { value: "7",  abbr: "DEN", name: "Denver Broncos",       conf: "AFC West" },
+        { value: "12", abbr: "KC",  name: "Kansas City Chiefs",   conf: "AFC West" },
+        { value: "13", abbr: "LV",  name: "Las Vegas Raiders",    conf: "AFC West" },
+        { value: "24", abbr: "LAC", name: "Los Angeles Chargers", conf: "AFC West" },
+        // NFC East
+        { value: "6",  abbr: "DAL", name: "Dallas Cowboys",         conf: "NFC East" },
+        { value: "19", abbr: "NYG", name: "New York Giants",        conf: "NFC East" },
+        { value: "21", abbr: "PHI", name: "Philadelphia Eagles",    conf: "NFC East" },
+        { value: "28", abbr: "WSH", name: "Washington Commanders",  conf: "NFC East" },
+        // NFC North
+        { value: "3",  abbr: "CHI", name: "Chicago Bears",       conf: "NFC North" },
+        { value: "8",  abbr: "DET", name: "Detroit Lions",       conf: "NFC North" },
+        { value: "9",  abbr: "GB",  name: "Green Bay Packers",   conf: "NFC North" },
+        { value: "16", abbr: "MIN", name: "Minnesota Vikings",   conf: "NFC North" },
+        // NFC South
+        { value: "1",  abbr: "ATL", name: "Atlanta Falcons",       conf: "NFC South" },
+        { value: "29", abbr: "CAR", name: "Carolina Panthers",     conf: "NFC South" },
+        { value: "18", abbr: "NO",  name: "New Orleans Saints",    conf: "NFC South" },
+        { value: "27", abbr: "TB",  name: "Tampa Bay Buccaneers",  conf: "NFC South" },
+        // NFC West
+        { value: "22", abbr: "ARI", name: "Arizona Cardinals",   conf: "NFC West" },
+        { value: "14", abbr: "LAR", name: "Los Angeles Rams",    conf: "NFC West" },
+        { value: "25", abbr: "SF",  name: "San Francisco 49ers", conf: "NFC West" },
+        { value: "26", abbr: "SEA", name: "Seattle Seahawks",    conf: "NFC West" },
+    ];
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    var websocket     = null;
+    var uuid          = null;
+    var actionContext = null;
+    var actionUUID    = null;
+    var savedTeamId   = null;
+
+    // ── Autocomplete ──────────────────────────────────────────────────────────
+    var acList      = document.getElementById('autocompleteList');
+    var searchBox   = document.getElementById('searchBox');
+    var activeIndex = -1;
+
+    function showAutocomplete() {
+        var query = searchBox.value.toLowerCase().trim();
+        acList.innerHTML = '';
+        activeIndex = -1;
+
+        if (!query) { acList.style.display = 'none'; return; }
+
+        var matches = TEAMS.filter(function(t) {
+            return t.name.toLowerCase().indexOf(query) !== -1;
+        });
+
+        if (!matches.length) { acList.style.display = 'none'; return; }
+
+        matches.forEach(function(t) {
+            var div = document.createElement('div');
+            div.className = 'ac-item';
+            div.textContent = t.name;
+            div.setAttribute('data-value', t.value);
+            div.setAttribute('data-abbr', t.abbr);
+            div.setAttribute('data-name', t.name);
+            div.addEventListener('mousedown', function(e) {
+                e.preventDefault(); // keep focus off blur
+                selectTeam(t.value, t.abbr, t.name);
+            });
+            acList.appendChild(div);
+        });
+
+        acList.style.display = 'block';
+    }
+
+    function hideAutocomplete() {
+        acList.style.display = 'none';
+        activeIndex = -1;
+    }
+
+    function navigateAutocomplete(dir) {
+        var items = acList.querySelectorAll('.ac-item');
+        if (!items.length) return;
+        items[activeIndex] && items[activeIndex].classList.remove('active');
+        activeIndex = (activeIndex + dir + items.length) % items.length;
+        items[activeIndex].classList.add('active');
+        items[activeIndex].scrollIntoView({ block: 'nearest' });
+    }
+
+    searchBox.addEventListener('input', showAutocomplete);
+
+    searchBox.addEventListener('keydown', function(e) {
+        if (acList.style.display === 'none') return;
+        if (e.key === 'ArrowDown')  { e.preventDefault(); navigateAutocomplete(1); }
+        if (e.key === 'ArrowUp')    { e.preventDefault(); navigateAutocomplete(-1); }
+        if (e.key === 'Enter') {
+            var active = acList.querySelector('.ac-item.active');
+            if (active) {
+                e.preventDefault();
+                selectTeam(active.getAttribute('data-value'), active.getAttribute('data-abbr'), active.getAttribute('data-name'));
+            }
+        }
+        if (e.key === 'Escape') hideAutocomplete();
+    });
+
+    searchBox.addEventListener('blur', function() {
+        setTimeout(hideAutocomplete, 150);
+    });
+
+    // ── Division → Team dropdown ──────────────────────────────────────────────
+    function renderTeamSelect() {
+        var conf    = document.getElementById('confSelect').value;
+        var teamSel = document.getElementById('teamSelect');
+
+        var filtered = conf ? TEAMS.filter(function(t) { return t.conf === conf; }) : TEAMS;
+
+        teamSel.innerHTML = '<option value="">— Select a team —</option>';
+        filtered.forEach(function(t) {
+            var opt = document.createElement('option');
+            opt.value = t.value;
+            opt.setAttribute('data-abbr', t.abbr);
+            opt.textContent = t.name;
+            teamSel.appendChild(opt);
+        });
+
+        if (savedTeamId && filtered.some(function(t) { return t.value === savedTeamId; })) {
+            teamSel.value = savedTeamId;
+        }
+    }
+
+    // ── Shared selection handler ──────────────────────────────────────────────
+    function selectTeam(value, abbr, name) {
+        savedTeamId = value;
+
+        // Update search box display
+        searchBox.value = name;
+        hideAutocomplete();
+
+        // Sync division dropdown + team dropdown to match
+        var team = TEAMS.find(function(t) { return t.value === value; });
+        if (team) {
+            document.getElementById('confSelect').value = team.conf;
+            renderTeamSelect();
+            document.getElementById('teamSelect').value = value;
+        }
+
+        showSelectedTeamBanner(name);
+        saveSettings(value, abbr);
+    }
+
+    function showSelectedTeamBanner(name) {
+        var infoEl = document.getElementById('selectedTeamInfo');
+        var nameEl = document.getElementById('selectedTeamName');
+        if (name) {
+            nameEl.textContent   = name;
+            infoEl.style.display = 'block';
+        } else {
+            infoEl.style.display = 'none';
+        }
+    }
+
+    // ── Settings ──────────────────────────────────────────────────────────────
+    function applySettings(settings) {
+        if (!settings || !settings.teamId) return;
+        savedTeamId = settings.teamId;
+        var team = TEAMS.find(function(t) { return t.value === settings.teamId; });
+        if (team) {
+            searchBox.value = team.name;
+            document.getElementById('confSelect').value = team.conf;
+            renderTeamSelect();
+            document.getElementById('teamSelect').value = team.value;
+            showSelectedTeamBanner(team.name);
+        }
+    }
+
+    function saveSettings(value, abbr) {
+        if (!websocket || !value) return;
+        var payload = { teamId: value, teamAbbr: abbr };
+        websocket.send(JSON.stringify({ event: 'setSettings',  context: uuid,        payload: payload }));
+        websocket.send(JSON.stringify({ event: 'sendToPlugin', context: uuid, action: actionUUID, payload: { event: 'settingsChanged', settings: payload } }));
+    }
+
+    // ── Division dropdown change ──────────────────────────────────────────────
+    document.getElementById('confSelect').addEventListener('change', function() {
+        savedTeamId = null;
+        searchBox.value = '';
+        renderTeamSelect();
+        showSelectedTeamBanner('');
+    });
+
+    document.getElementById('teamSelect').addEventListener('change', function() {
+        var sel  = document.getElementById('teamSelect');
+        if (!sel.value) return;
+        var abbr = sel.options[sel.selectedIndex].getAttribute('data-abbr');
+        var name = sel.options[sel.selectedIndex].text;
+        savedTeamId     = sel.value;
+        searchBox.value = name;
+        showSelectedTeamBanner(name);
+        saveSettings(sel.value, abbr);
+    });
+
+    // ── Stream Deck WebSocket ─────────────────────────────────────────────────
+    function connectElgatoStreamDeckSocket(port, propertyInspectorUUID, registerEvent, info, actionInfo) {
+        uuid = propertyInspectorUUID;
+        try {
+            var parsed = JSON.parse(actionInfo);
+            actionContext = parsed.context;
+            actionUUID    = parsed.action;
+        } catch(e) {}
+
+        websocket = new WebSocket('ws://127.0.0.1:' + port);
+
+        websocket.onopen = function() {
+            websocket.send(JSON.stringify({ event: registerEvent, uuid: propertyInspectorUUID }));
+            websocket.send(JSON.stringify({ event: 'getSettings', context: propertyInspectorUUID }));
+        };
+
+        websocket.onmessage = function(evt) {
+            try {
+                var data = JSON.parse(evt.data);
+                if (data.event === 'didReceiveSettings') {
+                    applySettings(data.payload.settings);
+                }
+            } catch(e) {}
+        };
+    }
+
+    // Initial render
+    renderTeamSelect();
+</script>
+
+<div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #444; text-align: center; color: #666; font-size: 10px; line-height: 1.5;">
+    Created by T.J. Lauerman<br>aka ThatSportsGamer
+</div>
+
+</body>
+</html>

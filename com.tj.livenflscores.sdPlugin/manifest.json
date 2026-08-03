@@ -1,0 +1,40 @@
+{
+    "Author": "T.J. Lauerman aka ThatSportsGamer",
+    "CodePath": "plugin.js",
+    "Description": "Shows live NFL scores on your Stream Deck. Each button tracks one team — see the current score, quarter, clock, and possession at a glance.",
+    "Name": "Live NFL Scores",
+    "UUID": "com.tj.livenflscores",
+    "Category": "Live Sports Scores",
+    "URL": "https://github.com/ThatSportsGamer/live-nfl-scores-for-stream-deck",
+    "Icon": "imgs/plugin-icon",
+    "CategoryIcon": "imgs/category-icon",
+    "Version": "1.0.0.0",
+    "SDKVersion": 3,
+    "Software": {
+        "MinimumVersion": "6.9"
+    },
+    "OS": [
+        { "Platform": "mac", "MinimumVersion": "10.15" },
+        { "Platform": "windows", "MinimumVersion": "10" }
+    ],
+    "Nodejs": {
+        "Version": "20",
+        "Debug": "enabled"
+    },
+    "Actions": [
+        {
+            "Name": "Live NFL Scores",
+            "UUID": "com.tj.livenflscores.score",
+            "Icon": "imgs/action-icon",
+            "Tooltip": "Shows live score for your chosen NFL team. Updates every 30 seconds.",
+            "PropertyInspectorPath": "property-inspector.html",
+            "States": [
+                {
+                    "Image": "imgs/action-icon",
+                    "Title": ""
+                }
+            ],
+            "SupportedInMultiActions": false
+        }
+    ]
+}
