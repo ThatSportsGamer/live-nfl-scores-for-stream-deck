@@ -101,6 +101,9 @@ Bug reports and feature requests are welcome — open an [Issue](../../issues) t
 
 ## Changelog
 
+**1.0.1.0**
+- Fixed a bug where ESPN's edge network (Akamai) would return a `403 Access Denied` HTML page instead of JSON for requests that didn't look like a real browser, which showed up on the button as an `Err` state. Requests now send a realistic browser header set (User-Agent, Accept, Accept-Encoding) and transparently decompress the gzip/brotli response that comes back as a result.
+
 **1.0.0.0**
 - Initial release — live scores, possession indicator, red zone highlighting, pre-game/final states, score-change flash, end-of-game fireworks, Gamecast shortcut, and all 32 NFL teams across 8 divisions
 

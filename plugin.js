@@ -12,6 +12,7 @@ const crypto = require('crypto');
 const events = require('events');
 const path   = require('path');
 const fs     = require('fs');
+const zlib   = require('zlib');
 
 // ── Logging ───────────────────────────────────────────────────────────────────
 const LOG_FILE = path.join(__dirname, 'plugin.log');
@@ -599,12 +600,35 @@ function fetchTeamGame(teamId) {
         const url = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard' +
             '?dates=' + fmt(start) + '-' + fmt(end);
 
-        const req = https.get(url, { headers: { 'User-Agent': 'StreamDeckNFLScores/1.0' } }, res => {
-            let body = '';
-            res.on('data', chunk => body += chunk);
+        // ESPN's edge (Akamai) started rejecting requests that don't look like a
+        // real browser — a bare custom User-Agent with no Accept/Accept-Encoding
+        // was getting a 403 "Access Denied" HTML page back instead of JSON. A
+        // realistic browser header set (including Accept-Encoding, which the
+        // response is then actually compressed with) is what gets a real 200.
+        const reqHeaders = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Encoding': 'gzip, deflate, br',
+        };
+
+        const req = https.get(url, { headers: reqHeaders }, res => {
+            if (res.statusCode !== 200) {
+                res.resume(); // drain so the socket can be reused/closed cleanly
+                reject(new Error('HTTP ' + res.statusCode));
+                return;
+            }
+
+            const chunks = [];
+            res.on('data', chunk => chunks.push(chunk));
             res.on('end', () => {
-                try { resolve(parseGames(JSON.parse(body), teamId, now)); }
-                catch (e) { reject(e); }
+                try {
+                    let buf = Buffer.concat(chunks);
+                    const enc = res.headers['content-encoding'];
+                    if (enc === 'gzip')      buf = zlib.gunzipSync(buf);
+                    else if (enc === 'br')   buf = zlib.brotliDecompressSync(buf);
+                    else if (enc === 'deflate') buf = zlib.inflateSync(buf);
+                    resolve(parseGames(JSON.parse(buf.toString('utf8')), teamId, now));
+                } catch (e) { reject(e); }
             });
         });
 
