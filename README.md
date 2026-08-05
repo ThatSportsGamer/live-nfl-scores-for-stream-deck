@@ -2,7 +2,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your buttons. Each button tracks one team and updates automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.0-green)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.1-green)
 
 ---
 
@@ -20,6 +20,16 @@ A Stream Deck plugin that shows live NFL scores directly on your buttons. Each b
 - **No-flicker updates** — buttons only redraw when the display actually changes
 - **Multi-button support** — add as many team buttons as you want, each refreshes independently
 - **All 32 NFL teams** across all 8 divisions (AFC East, North, South, West and NFC East, North, South, West)
+
+---
+
+## Recent Updates
+
+**v1.0.1.0**
+- Fixed a bug where ESPN's edge network (Akamai) would return a `403 Access Denied` HTML page instead of JSON for requests that didn't look like a real browser, which showed up on the button as an `Err` state. Requests now send a realistic browser header set (User-Agent, Accept, Accept-Encoding) and transparently decompress the gzip/brotli response that comes back as a result.
+
+**v1.0.0.0**
+- Initial release — live scores, possession indicator, red zone highlighting, pre-game/final states, score-change flash, end-of-game fireworks, Gamecast shortcut, and all 32 NFL teams across 8 divisions
 
 ---
 
@@ -96,16 +106,6 @@ Open Stream Deck → Preferences → Plugins, select **Live NFL Scores**, and cl
 ## Contributing
 
 Bug reports and feature requests are welcome — open an [Issue](../../issues) to get started.
-
----
-
-## Changelog
-
-**1.0.1.0**
-- Fixed a bug where ESPN's edge network (Akamai) would return a `403 Access Denied` HTML page instead of JSON for requests that didn't look like a real browser, which showed up on the button as an `Err` state. Requests now send a realistic browser header set (User-Agent, Accept, Accept-Encoding) and transparently decompress the gzip/brotli response that comes back as a result.
-
-**1.0.0.0**
-- Initial release — live scores, possession indicator, red zone highlighting, pre-game/final states, score-change flash, end-of-game fireworks, Gamecast shortcut, and all 32 NFL teams across 8 divisions
 
 ---
 
