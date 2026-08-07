@@ -788,12 +788,17 @@ function makeImage(lines, lineSpacing = 1.4, bgColor = 'black') {
         if (i > 0) y += lineHeights[i - 1] - items[i - 1].fs * 0.80 + fs * 0.80;
 
         if (parts && parts.length === 2) {
-            const GAP = fs * 0.28;
+            // `dx` on the second tspan turned out to be silently ignored by the
+            // device's renderer (the gap just vanished — "CAR0"). A literal space
+            // character is the fallback, but plain XML whitespace handling is
+            // free to collapse/trim it; `xml:space="preserve"` on the parent
+            // <text> is what stops that, so the space in the second tspan's own
+            // text content survives instead of relying on a length-based offset.
             return (
-                `<text x="36" y="${y.toFixed(1)}" text-anchor="middle" ` +
+                `<text x="36" y="${y.toFixed(1)}" text-anchor="middle" xml:space="preserve" ` +
                 `font-family="Helvetica Neue,Arial,sans-serif" font-size="${fs}" font-weight="600">` +
                 `<tspan fill="${parts[0].color || color || 'white'}">${escXml(parts[0].text)}</tspan>` +
-                `<tspan dx="${GAP.toFixed(1)}" fill="${parts[1].color || color || 'white'}">${escXml(parts[1].text)}</tspan>` +
+                `<tspan fill="${parts[1].color || color || 'white'}"> ${escXml(parts[1].text)}</tspan>` +
                 `</text>`
             );
         }
