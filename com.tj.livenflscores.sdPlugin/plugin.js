@@ -632,45 +632,22 @@ const teamColor = id => TEAMS[id]?.color || '#FFFFFF';
 const teamName  = id => TEAMS[id]?.short || teamAbbr(id);
 
 // ── ESPN API ──────────────────────────────────────────────────────────────────
-function fetchTeamGame(teamId) {
-    // hasOwnProperty (not just truthiness) so a `null` entry — used to force the
-    // "No Game" state — is honored instead of falling through to the real API.
-    if (Object.prototype.hasOwnProperty.call(DEBUG_FAKE_GAMES, teamId)) {
-        return Promise.resolve(DEBUG_FAKE_GAMES[teamId]);
-    }
+// ESPN's edge (Akamai) started rejecting requests that don't look like a real
+// browser — a bare custom User-Agent with no Accept/Accept-Encoding was
+// getting a 403 "Access Denied" HTML page back instead of JSON. A realistic
+// browser header set (including Accept-Encoding, which the response is then
+// actually compressed with) is what gets a real 200.
+const ESPN_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Encoding': 'gzip, deflate, br',
+};
 
+// Shared GET-and-decompress-and-parse helper — used for both the per-team
+// scoreboard fetch and the calendar/week-boundary lookup below.
+function fetchJson(url) {
     return new Promise((resolve, reject) => {
-        const now = DEBUG_ANCHOR_DATE ? new Date(DEBUG_ANCHOR_DATE) : new Date();
-        // Don't roll to the next day's slate until 2am — covers late-running games
-        if (!DEBUG_ANCHOR_DATE && now.getHours() < 2) now.setDate(now.getDate() - 1);
-
-        const fmt = d => d.getFullYear() +
-            String(d.getMonth() + 1).padStart(2, '0') +
-            String(d.getDate()).padStart(2, '0');
-
-        // NFL teams play roughly one game per week, not daily — pull a 21-day
-        // window (ten days back, ten days ahead) and pick the most relevant
-        // game for this team out of it. This comfortably covers a bye week
-        // with margin to spare, while staying well under ESPN's default
-        // response cap for a single week's scoreboard.
-        const start = new Date(now); start.setDate(start.getDate() - 10);
-        const end   = new Date(now); end.setDate(end.getDate() + 10);
-
-        const url = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard' +
-            '?dates=' + fmt(start) + '-' + fmt(end);
-
-        // ESPN's edge (Akamai) started rejecting requests that don't look like a
-        // real browser — a bare custom User-Agent with no Accept/Accept-Encoding
-        // was getting a 403 "Access Denied" HTML page back instead of JSON. A
-        // realistic browser header set (including Accept-Encoding, which the
-        // response is then actually compressed with) is what gets a real 200.
-        const reqHeaders = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Encoding': 'gzip, deflate, br',
-        };
-
-        const req = https.get(url, { headers: reqHeaders }, res => {
+        const req = https.get(url, { headers: ESPN_HEADERS }, res => {
             if (res.statusCode !== 200) {
                 res.resume(); // drain so the socket can be reused/closed cleanly
                 reject(new Error('HTTP ' + res.statusCode));
@@ -686,7 +663,7 @@ function fetchTeamGame(teamId) {
                     if (enc === 'gzip')      buf = zlib.gunzipSync(buf);
                     else if (enc === 'br')   buf = zlib.brotliDecompressSync(buf);
                     else if (enc === 'deflate') buf = zlib.inflateSync(buf);
-                    resolve(parseGames(JSON.parse(buf.toString('utf8')), teamId, now));
+                    resolve(JSON.parse(buf.toString('utf8')));
                 } catch (e) { reject(e); }
             });
         });
@@ -696,10 +673,80 @@ function fetchTeamGame(teamId) {
     });
 }
 
+// ── Current "week" boundary ─────────────────────────────────────────────────
+// ESPN's calendar (Hall of Fame Weekend, Preseason Week 1, Week 2 of the
+// regular season, etc.) only comes back on the plain scoreboard endpoint with
+// no `dates` param — our per-team call always passes a custom date range, and
+// that response's calendar array is empty. So this is a small separate fetch,
+// cached for a few hours (the boundary only moves roughly weekly, so there's
+// no need to hit it on every 30-second poll) purely to answer "when does the
+// current week end?" for the recent-final-beats-upcoming-preview rule below.
+const WEEK_CACHE_MS = 6 * 60 * 60 * 1000; // 6 hours
+let weekEndCache = { fetchedAt: 0, endMs: null };
+
+async function getCurrentWeekEnd() {
+    if (Date.now() - weekEndCache.fetchedAt < WEEK_CACHE_MS) return weekEndCache.endMs;
+
+    try {
+        const data = await fetchJson('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
+        const cal  = data?.leagues?.[0]?.calendar || [];
+        const now  = Date.now();
+        let endMs  = null;
+        outer: for (const block of cal) {
+            for (const entry of block.entries || []) {
+                const startMs = new Date(entry.startDate).getTime();
+                const entryEndMs = new Date(entry.endDate).getTime();
+                if (now >= startMs && now < entryEndMs) { endMs = entryEndMs; break outer; }
+            }
+        }
+        weekEndCache = { fetchedAt: now, endMs };
+        log('Week boundary refreshed — current week ends', endMs ? new Date(endMs).toISOString() : 'unknown');
+        return endMs;
+    } catch (e) {
+        log('Week boundary fetch failed:', e.message);
+        return weekEndCache.endMs; // stale (possibly null) is fine — the override below just won't apply
+    }
+}
+
+function fetchTeamGame(teamId) {
+    // hasOwnProperty (not just truthiness) so a `null` entry — used to force the
+    // "No Game" state — is honored instead of falling through to the real API.
+    if (Object.prototype.hasOwnProperty.call(DEBUG_FAKE_GAMES, teamId)) {
+        return Promise.resolve(DEBUG_FAKE_GAMES[teamId]);
+    }
+
+    const now = DEBUG_ANCHOR_DATE ? new Date(DEBUG_ANCHOR_DATE) : new Date();
+    // Don't roll to the next day's slate until 2am — covers late-running games
+    if (!DEBUG_ANCHOR_DATE && now.getHours() < 2) now.setDate(now.getDate() - 1);
+
+    const fmt = d => d.getFullYear() +
+        String(d.getMonth() + 1).padStart(2, '0') +
+        String(d.getDate()).padStart(2, '0');
+
+    // NFL teams play roughly one game per week, not daily — pull a 21-day
+    // window (ten days back, ten days ahead) and pick the most relevant
+    // game for this team out of it. This comfortably covers a bye week
+    // with margin to spare, while staying well under ESPN's default
+    // response cap for a single week's scoreboard.
+    const start = new Date(now); start.setDate(start.getDate() - 10);
+    const end   = new Date(now); end.setDate(end.getDate() + 10);
+
+    const url = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard' +
+        '?dates=' + fmt(start) + '-' + fmt(end);
+
+    return Promise.all([fetchJson(url), getCurrentWeekEnd()])
+        .then(([data, weekEnd]) => parseGames(data, teamId, now, weekEnd));
+}
+
 // Pick the single most relevant event for this team out of a multi-week scoreboard:
 // a game in progress beats an upcoming game, which beats a past final (so the button
-// holds last week's result until the next game appears).
-function parseGames(data, teamId, now) {
+// holds last week's result until the next game appears) — EXCEPT that a final from
+// the current ESPN "week" (Hall of Fame Weekend, Preseason Week 1, etc.) keeps
+// beating an upcoming preview until that week actually ends. Without this, a final
+// score gets replaced by next week's matchup the instant the next game is close
+// enough to be visible in the rolling window — which for preseason, where games can
+// be barely a week apart, can mean the final is only ever shown for a few seconds.
+function parseGames(data, teamId, now, weekEnd) {
     try {
         const allEvents = data?.events || [];
         if (!allEvents.length) { log('API: no events in range'); return null; }
@@ -725,6 +772,22 @@ function parseGames(data, teamId, now) {
                 if (rank === 1 && time > bestTime) { best = e; bestTime = time; } // most recent final
             }
         }
+
+        // No game is currently live, and we haven't crossed into next week yet —
+        // a recent final (if this team has one) keeps winning over an upcoming
+        // preview regardless of the rank ordering above.
+        if (bestRank !== 3 && weekEnd && Date.now() < weekEnd) {
+            let recentFinal = null, recentFinalTime = -1;
+            for (const e of matches) {
+                const comp  = e.competitions[0];
+                const state = (comp.status || e.status)?.type?.state;
+                if (state !== 'post') continue;
+                const time = new Date(e.date).getTime();
+                if (time > recentFinalTime) { recentFinal = e; recentFinalTime = time; }
+            }
+            if (recentFinal) best = recentFinal;
+        }
+
         return parseEvent(best, now);
     } catch (e) {
         log('parseGames error:', e.message);
