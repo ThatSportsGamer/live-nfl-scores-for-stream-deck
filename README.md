@@ -2,7 +2,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your buttons. Each button tracks one team and updates automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.6-green)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.7-green)
 
 ---
 
@@ -24,6 +24,9 @@ A Stream Deck plugin that shows live NFL scores directly on your buttons. Each b
 ---
 
 ## Recent Updates
+
+**v1.0.7.0**
+- Bye weeks now show `BYE WEEK` instead of the generic `No Game`. Detected without any extra API call: if other teams have games in the current window but this one doesn't, that specifically means a bye — a normally-scheduled team can never actually go empty given the hold-until-Tuesday and 10-day-forward rules, only a bye (roughly double the usual gap between games) can push it past both.
 
 **v1.0.6.0**
 - Replaced the ESPN-calendar-based "hold the final" rule from v1.0.5.0 with a simpler, fixed one: a final now holds until the next Tuesday, 3:00 AM ET, after that specific game, regardless of which point in the season it is. No extra API call needed for this anymore — it's a plain date calculation anchored to the finished game's own kickoff time.
@@ -100,9 +103,16 @@ KC    24
 **Bye week:**
 ```
  KC
-No Game
+BYE WEEK
 ```
 Pressing the button in this state opens that team's schedule on ESPN.
+
+**No game found at all** (e.g. deep off-season):
+```
+ KC
+No Game
+```
+Same button behavior as a bye — pressing it opens the team's schedule on ESPN.
 
 ---
 

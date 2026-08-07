@@ -497,6 +497,7 @@ function parseClockSeconds(clockStr) {
 function buildLines(game, cfg) {
     const abbr = cfg.teamAbbr || 'NFL';
     if (!game) return [abbr, 'No Game'];
+    if (game.state === 'bye') return [abbr, 'BYE WEEK'];
 
     if (game.state === 'preview') return [game.matchup, game.time];
     if (game.state === 'ppd')     return [game.matchup, { text: 'PPD',   fs: 16, color: '#E74C3C' }];
@@ -743,7 +744,18 @@ function parseGames(data, teamId, now) {
             if (!comp || !comp.competitors) return false;
             return comp.competitors.some(c => String(c.team?.id) === String(teamId));
         });
-        if (!matches.length) { log('API: no games found for team', teamId); return null; }
+        if (!matches.length) {
+            // Other teams have games in this window but this one doesn't — under
+            // normal weekly cadence that can't happen (the hold-until-Tuesday
+            // rule plus the 10-day-forward preview window always overlap for a
+            // team playing every ~7 days), so an empty `matches` alongside a
+            // non-empty `allEvents` specifically means this team has a bye.
+            // (The one known false positive: a team eliminated from the
+            // playoffs while others still play on — rare enough, and only
+            // relevant in January, to leave as a known limitation for now.)
+            log('API: no games found for team', teamId, '— treating as bye week');
+            return { state: 'bye' };
+        }
 
         let best = null, bestRank = -1, bestTime = null;
         for (const e of matches) {
