@@ -226,7 +226,7 @@ const flashing        = new Set(); // contexts mid-flash animation
 const refreshing      = new Set(); // contexts mid-async refresh
 const lastRender       = new Map(); // context -> JSON key of last rendered lines
 const currentGame      = new Map(); // context -> parsed game object | null
-const refreshTimers    = new Map(); // context -> intervalId (staggered per-button timers)
+const refreshTimers    = new Map(); // context -> timeoutId (self-rescheduling; cadence varies, see scheduleNextRefresh)
 const lastPossession    = new Map(); // context -> { eventId, possession, isRedZone } — last known-good possession for the current game
 
 // ── Connect to Stream Deck ────────────────────────────────────────────────────
@@ -258,9 +258,9 @@ function handleEvent({ event, context, payload }) {
         case 'willAppear':
             instances.set(context, (payload && payload.settings) || {});
             log('willAppear — settings:', instances.get(context));
-            if (refreshTimers.has(context)) clearInterval(refreshTimers.get(context));
-            refreshTimers.set(context, setInterval(() => refreshButton(context), 30_000));
+            if (refreshTimers.has(context)) clearTimeout(refreshTimers.get(context));
             refreshButton(context);
+            scheduleNextRefresh(context);
             break;
 
         case 'willDisappear':
@@ -273,7 +273,7 @@ function handleEvent({ event, context, payload }) {
             flashing.delete(context);
             lastPossession.delete(context);
             if (refreshTimers.has(context)) {
-                clearInterval(refreshTimers.get(context));
+                clearTimeout(refreshTimers.get(context));
                 refreshTimers.delete(context);
             }
             break;
@@ -314,6 +314,33 @@ function handleEvent({ event, context, payload }) {
             }
             break;
     }
+}
+
+// ── Adaptive refresh cadence ───────────────────────────────────────────────────
+// Polls every 30 seconds normally, but drops to every 15 seconds once the game
+// is inside the two-minute warning window (last 2:00 of the 2nd or 4th
+// quarter) — the stretch where a single missed 30-second window can mean
+// skipping right past a score or a clock-management play entirely. Falls
+// straight back to 30 seconds the moment the quarter ends. Self-rescheduling
+// (setTimeout that re-arms itself after each refresh completes) rather than
+// a fixed setInterval, since the right delay can only be known after seeing
+// the result of the refresh that just happened.
+function nextRefreshDelay(context) {
+    const game = currentGame.get(context);
+    if (game && game.state === 'live' && (game.period === 2 || game.period === 4)) {
+        const secondsLeft = parseClockSeconds(game.clock);
+        if (secondsLeft !== null && secondsLeft <= 120) return 15_000;
+    }
+    return 30_000;
+}
+
+function scheduleNextRefresh(context) {
+    const delay = nextRefreshDelay(context);
+    const timer = setTimeout(async () => {
+        await refreshButton(context);
+        scheduleNextRefresh(context);
+    }, delay);
+    refreshTimers.set(context, timer);
 }
 
 // ── Refresh one button ────────────────────────────────────────────────────────
