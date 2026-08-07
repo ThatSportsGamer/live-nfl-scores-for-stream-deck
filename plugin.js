@@ -643,8 +643,7 @@ const ESPN_HEADERS = {
     'Accept-Encoding': 'gzip, deflate, br',
 };
 
-// Shared GET-and-decompress-and-parse helper — used for both the per-team
-// scoreboard fetch and the calendar/week-boundary lookup below.
+// GET-and-decompress-and-parse helper for the per-team scoreboard fetch.
 function fetchJson(url) {
     return new Promise((resolve, reject) => {
         const req = https.get(url, { headers: ESPN_HEADERS }, res => {
@@ -673,39 +672,28 @@ function fetchJson(url) {
     });
 }
 
-// ── Current "week" boundary ─────────────────────────────────────────────────
-// ESPN's calendar (Hall of Fame Weekend, Preseason Week 1, Week 2 of the
-// regular season, etc.) only comes back on the plain scoreboard endpoint with
-// no `dates` param — our per-team call always passes a custom date range, and
-// that response's calendar array is empty. So this is a small separate fetch,
-// cached for a few hours (the boundary only moves roughly weekly, so there's
-// no need to hit it on every 30-second poll) purely to answer "when does the
-// current week end?" for the recent-final-beats-upcoming-preview rule below.
-const WEEK_CACHE_MS = 6 * 60 * 60 * 1000; // 6 hours
-let weekEndCache = { fetchedAt: 0, endMs: null };
-
-async function getCurrentWeekEnd() {
-    if (Date.now() - weekEndCache.fetchedAt < WEEK_CACHE_MS) return weekEndCache.endMs;
-
-    try {
-        const data = await fetchJson('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
-        const cal  = data?.leagues?.[0]?.calendar || [];
-        const now  = Date.now();
-        let endMs  = null;
-        outer: for (const block of cal) {
-            for (const entry of block.entries || []) {
-                const startMs = new Date(entry.startDate).getTime();
-                const entryEndMs = new Date(entry.endDate).getTime();
-                if (now >= startMs && now < entryEndMs) { endMs = entryEndMs; break outer; }
-            }
-        }
-        weekEndCache = { fetchedAt: now, endMs };
-        log('Week boundary refreshed — current week ends', endMs ? new Date(endMs).toISOString() : 'unknown');
-        return endMs;
-    } catch (e) {
-        log('Week boundary fetch failed:', e.message);
-        return weekEndCache.endMs; // stale (possibly null) is fine — the override below just won't apply
-    }
+// ── "Hold the final" cutoff ─────────────────────────────────────────────────
+// A finished game keeps winning over an upcoming preview until the next
+// Tuesday, 3:00 AM ET, following that specific final — a fixed weekly rule
+// rather than ESPN's own irregular week boundaries (which run Wednesday for
+// the regular season but Thursday for preseason/Hall of Fame Weekend, and
+// would otherwise require a separate cached fetch just to look up). Anchored
+// to the final's own kickoff date rather than to "now" so it can't silently
+// re-arm itself forever — recomputing "next Tuesday 3am from right now" on
+// every poll would, the moment one Tuesday 3am passes, immediately resolve
+// to the *following* Tuesday and never actually let the preview take over.
+//
+// Uses local system time, same assumption as the "don't roll to next day
+// until 2am" logic elsewhere in this file — this only produces the intended
+// result if the host machine's clock is set to US Eastern time.
+function nextTuesday3amAfter(fromMs) {
+    const day       = new Date(fromMs).getDay(); // 0=Sun ... 2=Tue ... 6=Sat
+    const daysUntil = (2 - day + 7) % 7;          // 0 if `fromMs` itself falls on a Tuesday
+    const candidate = new Date(fromMs);
+    candidate.setDate(candidate.getDate() + daysUntil);
+    candidate.setHours(3, 0, 0, 0);
+    if (candidate.getTime() <= fromMs) candidate.setDate(candidate.getDate() + 7); // already past this Tuesday's 3am
+    return candidate.getTime();
 }
 
 function fetchTeamGame(teamId) {
@@ -734,19 +722,18 @@ function fetchTeamGame(teamId) {
     const url = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard' +
         '?dates=' + fmt(start) + '-' + fmt(end);
 
-    return Promise.all([fetchJson(url), getCurrentWeekEnd()])
-        .then(([data, weekEnd]) => parseGames(data, teamId, now, weekEnd));
+    return fetchJson(url).then(data => parseGames(data, teamId, now));
 }
 
 // Pick the single most relevant event for this team out of a multi-week scoreboard:
 // a game in progress beats an upcoming game, which beats a past final (so the button
-// holds last week's result until the next game appears) — EXCEPT that a final from
-// the current ESPN "week" (Hall of Fame Weekend, Preseason Week 1, etc.) keeps
-// beating an upcoming preview until that week actually ends. Without this, a final
-// score gets replaced by next week's matchup the instant the next game is close
-// enough to be visible in the rolling window — which for preseason, where games can
-// be barely a week apart, can mean the final is only ever shown for a few seconds.
-function parseGames(data, teamId, now, weekEnd) {
+// holds last week's result until the next game appears) — EXCEPT that a final keeps
+// beating an upcoming preview until the following Tuesday, 3:00 AM ET (see
+// nextTuesday3amAfter above). Without this, a final score gets replaced by next
+// week's matchup the instant the next game is close enough to be visible in the
+// rolling window — which for preseason, where games can be barely a week apart,
+// can mean the final is only ever shown for a few seconds.
+function parseGames(data, teamId, now) {
     try {
         const allEvents = data?.events || [];
         if (!allEvents.length) { log('API: no events in range'); return null; }
@@ -773,10 +760,11 @@ function parseGames(data, teamId, now, weekEnd) {
             }
         }
 
-        // No game is currently live, and we haven't crossed into next week yet —
-        // a recent final (if this team has one) keeps winning over an upcoming
+        // No game is currently live — check whether this team's most recent
+        // final is still inside its hold window (before the next Tuesday
+        // 3am ET that follows it) and, if so, prefer it over an upcoming
         // preview regardless of the rank ordering above.
-        if (bestRank !== 3 && weekEnd && Date.now() < weekEnd) {
+        if (bestRank !== 3) {
             let recentFinal = null, recentFinalTime = -1;
             for (const e of matches) {
                 const comp  = e.competitions[0];
@@ -785,7 +773,7 @@ function parseGames(data, teamId, now, weekEnd) {
                 const time = new Date(e.date).getTime();
                 if (time > recentFinalTime) { recentFinal = e; recentFinalTime = time; }
             }
-            if (recentFinal) best = recentFinal;
+            if (recentFinal && Date.now() < nextTuesday3amAfter(recentFinalTime)) best = recentFinal;
         }
 
         return parseEvent(best, now);

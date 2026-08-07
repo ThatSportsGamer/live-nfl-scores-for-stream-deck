@@ -2,7 +2,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your buttons. Each button tracks one team and updates automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.5-green)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.6-green)
 
 ---
 
@@ -25,8 +25,11 @@ A Stream Deck plugin that shows live NFL scores directly on your buttons. Each b
 
 ## Recent Updates
 
+**v1.0.6.0**
+- Replaced the ESPN-calendar-based "hold the final" rule from v1.0.5.0 with a simpler, fixed one: a final now holds until the next Tuesday, 3:00 AM ET, after that specific game, regardless of which point in the season it is. No extra API call needed for this anymore — it's a plain date calculation anchored to the finished game's own kickoff time.
+
 **v1.0.5.0**
-- Fixed the final score getting replaced by next week's matchup almost immediately once that next game is close enough to appear in the rolling 21-day window — previously an upcoming preview always outranked a finished game, so in preseason (where games can be barely a week apart) the final could be visible for only one refresh cycle. It now keeps the final on screen until ESPN's own current "week" actually ends (Hall of Fame Weekend, Preseason Week 1, a regular-season week, etc.), matching how ESPN itself defines the schedule, then switches to the upcoming preview right on schedule.
+- Fixed the final score getting replaced by next week's matchup almost immediately once that next game is close enough to appear in the rolling 21-day window — previously an upcoming preview always outranked a finished game, so in preseason (where games can be barely a week apart) the final could be visible for only one refresh cycle.
 
 **v1.0.4.0**
 - Added an adaptive refresh cadence: buttons now poll every 15 seconds (instead of the normal 30) once the game is inside the two-minute warning window of the 2nd or 4th quarter, so a fast-moving crunch-time sequence is less likely to skip past a score or clock-management play between refreshes. Falls back to 30 seconds the moment the quarter ends.
