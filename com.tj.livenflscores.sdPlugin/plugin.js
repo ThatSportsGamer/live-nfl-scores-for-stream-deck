@@ -355,10 +355,18 @@ async function refreshButton(context) {
         // possession for this specific game (matched by eventId, so a stale
         // value never leaks into a *different* game) and fall back to it only
         // when the fresh fetch came back empty.
+        //
+        // Halftime is deliberately excluded from that fallback — it's the same
+        // "situation is blank" shape as a PAT gap, but the blank stretch can
+        // run 15-20 real minutes with genuinely nobody holding the ball, so
+        // carrying forward whoever had it at the two-minute warning would be
+        // actively misleading rather than smoothing over a blip. It's cleared
+        // here and re-armed naturally once real possession data resumes for
+        // the second half.
         if (game && game.state === 'live') {
             if (game.possession != null) {
                 lastPossession.set(context, { eventId: game.eventId, possession: game.possession, isRedZone: game.isRedZone });
-            } else {
+            } else if (game.statusName !== 'STATUS_HALFTIME') {
                 const last = lastPossession.get(context);
                 if (last && last.eventId === game.eventId) {
                     game.possession = last.possession;

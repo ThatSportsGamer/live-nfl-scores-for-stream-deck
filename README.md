@@ -27,6 +27,7 @@ A Stream Deck plugin that shows live NFL scores directly on your buttons. Each b
 
 **v1.0.3.0**
 - Fixed the possession indicator briefly flashing to white right around scoring plays (e.g. during an extra point attempt right after the preceding touchdown). ESPN's possession data occasionally goes blank for a single poll at exactly that moment even though the game is still live; the plugin now holds onto the last known possession for that specific game through a blank gap instead of dropping to "nobody has the ball."
+- That same carry-forward is deliberately skipped during halftime — ESPN's possession data is blank there too, but for 15-20 real minutes with genuinely nobody holding the ball, so the button correctly shows no possession color through the whole intermission instead of freezing on whoever had it at the two-minute warning.
 
 **v1.0.2.0**
 - Fixed live-game score lines (e.g. `CAR 0` / `ARI 0`) rendering visibly off-center on real Stream Deck hardware. The possession-color split now renders as two colored `<tspan>`s inside a single centered text element — the same native centering the clock line already used — instead of manually computing where two separate text elements should sit. This removes any dependency on guessing the device's real font metrics for positioning.
