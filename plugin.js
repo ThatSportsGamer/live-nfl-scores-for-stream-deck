@@ -803,11 +803,23 @@ function makeImage(lines, lineSpacing = 1.4, bgColor = 'black') {
             const PAD_X = 4;
             boundary = Math.max(boundary, PAD_X + w0);
             boundary = Math.min(boundary, (W - PAD_X) - w1 - GAP);
+            // textLength + lengthAdjust force each segment to actually render at
+            // exactly the width we calculated (w0 / w1), regardless of which real
+            // font the renderer substitutes for "Helvetica Neue" on a given
+            // device. Without this, the anchor points above are still correct,
+            // but the segments themselves can render narrower or wider than our
+            // estimate assumed, throwing the whole pair off-center on hardware
+            // that measures glyphs differently than the AFM table we based the
+            // estimate on — exactly the mismatch that made "CAR 0" / "ARI 0"
+            // visibly shift left on a real Stream Deck despite the boundary math
+            // itself being centered.
             return (
                 `<text x="${boundary.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="end" fill="${parts[0].color || color || 'white'}" ` +
-                `font-family="Helvetica Neue,Arial,sans-serif" font-size="${fs}" font-weight="600">${escXml(parts[0].text)}</text>` +
+                `font-family="Helvetica Neue,Arial,sans-serif" font-size="${fs}" font-weight="600" ` +
+                `textLength="${w0.toFixed(2)}" lengthAdjust="spacingAndGlyphs">${escXml(parts[0].text)}</text>` +
                 `<text x="${(boundary + GAP).toFixed(1)}" y="${y.toFixed(1)}" text-anchor="start" fill="${parts[1].color || color || 'white'}" ` +
-                `font-family="Helvetica Neue,Arial,sans-serif" font-size="${fs}" font-weight="600">${escXml(parts[1].text)}</text>`
+                `font-family="Helvetica Neue,Arial,sans-serif" font-size="${fs}" font-weight="600" ` +
+                `textLength="${w1.toFixed(2)}" lengthAdjust="spacingAndGlyphs">${escXml(parts[1].text)}</text>`
             );
         }
 
