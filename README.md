@@ -2,7 +2,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your buttons. Each button tracks one team and updates automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.2-green)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.3-green)
 
 ---
 
@@ -24,6 +24,9 @@ A Stream Deck plugin that shows live NFL scores directly on your buttons. Each b
 ---
 
 ## Recent Updates
+
+**v1.0.3.0**
+- Fixed the possession indicator briefly flashing to white right around scoring plays (e.g. during an extra point attempt right after the preceding touchdown). ESPN's possession data occasionally goes blank for a single poll at exactly that moment even though the game is still live; the plugin now holds onto the last known possession for that specific game through a blank gap instead of dropping to "nobody has the ball."
 
 **v1.0.2.0**
 - Fixed live-game score lines (e.g. `CAR 0` / `ARI 0`) rendering visibly off-center on real Stream Deck hardware. The possession-color split now renders as two colored `<tspan>`s inside a single centered text element — the same native centering the clock line already used — instead of manually computing where two separate text elements should sit. This removes any dependency on guessing the device's real font metrics for positioning.

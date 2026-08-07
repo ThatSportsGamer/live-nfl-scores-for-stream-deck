@@ -227,6 +227,7 @@ const refreshing      = new Set(); // contexts mid-async refresh
 const lastRender       = new Map(); // context -> JSON key of last rendered lines
 const currentGame      = new Map(); // context -> parsed game object | null
 const refreshTimers    = new Map(); // context -> intervalId (staggered per-button timers)
+const lastPossession    = new Map(); // context -> { eventId, possession, isRedZone } — last known-good possession for the current game
 
 // ── Connect to Stream Deck ────────────────────────────────────────────────────
 log('Connecting to Stream Deck on port', sdPort);
@@ -270,6 +271,7 @@ function handleEvent({ event, context, payload }) {
             currentGame.delete(context);
             refreshing.delete(context);
             flashing.delete(context);
+            lastPossession.delete(context);
             if (refreshTimers.has(context)) {
                 clearInterval(refreshTimers.get(context));
                 refreshTimers.delete(context);
@@ -341,6 +343,28 @@ async function refreshButton(context) {
             refreshing.delete(context);
             playFireworks(context, teamName(winnerId), teamColor(winnerId)).catch(e => log('fireworks error:', e.message));
             return;
+        }
+
+        // ESPN's `situation` block (possession/red zone) occasionally goes blank
+        // for a single poll right around a scoring play — e.g. during an extra
+        // point attempt, right after the touchdown that preceded it — even
+        // though the game is still very much live. Without this, that gap
+        // reads as "nobody has the ball" and the possession indicator visibly
+        // flashes to white and back, which looks like a bug rather than what
+        // it is (a brief upstream data gap). So: hold onto the last known-good
+        // possession for this specific game (matched by eventId, so a stale
+        // value never leaks into a *different* game) and fall back to it only
+        // when the fresh fetch came back empty.
+        if (game && game.state === 'live') {
+            if (game.possession != null) {
+                lastPossession.set(context, { eventId: game.eventId, possession: game.possession, isRedZone: game.isRedZone });
+            } else {
+                const last = lastPossession.get(context);
+                if (last && last.eventId === game.eventId) {
+                    game.possession = last.possession;
+                    game.isRedZone  = last.isRedZone;
+                }
+            }
         }
 
         const lines   = buildLines(game, cfg);
