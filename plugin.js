@@ -769,57 +769,32 @@ function makeImage(lines, lineSpacing = 1.4, bgColor = 'black') {
     // [{text:'KC',color:brown}, {text:' 17',color:white}]) instead of a single
     // `text` string — used for the live-game score lines so the possession
     // indicator can recolor just the team abbreviation while the score stays
-    // white. (A single text-anchor="middle" element with multiple colored
-    // <tspan>s is unreliable across SVG renderers and was dropped earlier.)
+    // white.
     //
-    // The two segments are anchored on either side of one shared boundary
-    // point: the left segment is text-anchor="end" at the boundary (its real
-    // right edge lands exactly there) and the right segment is
-    // text-anchor="start" at the same boundary (its real left edge lands
-    // exactly there). Each renderer positions every segment using its own
-    // *actual* glyph widths, so the two can never collide — only the
-    // boundary's overall placement depends on our width estimate, and any
-    // error there just nudges the whole pair slightly off-center instead of
-    // causing an overlap. Both lines always use this same approach regardless
-    // of who has the ball, so the text's own position never shifts when
-    // possession changes.
+    // Both segments live inside ONE text-anchor="middle" element as colored
+    // <tspan>s, so the renderer centers the combined width using its own
+    // real glyph measurements — the same mechanism that already centers the
+    // plain clock line correctly, and the only way to get pixel-accurate
+    // centering on a device whose actual font metrics we can't know in
+    // advance. (An earlier version manually anchored two separate <text>
+    // elements at a boundary point computed from an assumed glyph-width
+    // table; that math was internally symmetric but still depended on our
+    // estimate matching the real renderer's measurements, which is exactly
+    // what made "CAR 0" / "ARI 0" visibly drift off-center on real
+    // hardware.) The gap between the two segments is a `dx` offset on the
+    // second tspan rather than a literal space character, since a leading
+    // space in text content can get silently trimmed by some renderers.
     const rows = items.map(({ text, fs, color, parts }, i) => {
         if (i > 0) y += lineHeights[i - 1] - items[i - 1].fs * 0.80 + fs * 0.80;
 
         if (parts && parts.length === 2) {
-            const GAP    = fs * 0.28;   // explicit visual gap — not a space character,
-                                        // which renderers can trim and silently lose
-            // Real per-glyph widths, not a flat per-char estimate — letters like
-            // "L"/"R" are meaningfully wider than "I", so a flat estimate made
-            // different team abbreviations land at different true visual
-            // centers even though they shared the same boundary formula.
-            const w0     = textWidthPx(parts[0].text, fs);
-            const w1     = textWidthPx(parts[1].text, fs);
-            let boundary = 36 - (w0 + w1 + GAP) / 2 + w0;
-            // Defensive clamp: if a renderer's actual glyph widths run wider than
-            // our estimate, keep the boundary far enough from each edge that the
-            // segment anchored there still has reasonable room, rather than
-            // letting the estimate alone push it flush against — or past — PAD.
-            const PAD_X = 4;
-            boundary = Math.max(boundary, PAD_X + w0);
-            boundary = Math.min(boundary, (W - PAD_X) - w1 - GAP);
-            // textLength + lengthAdjust force each segment to actually render at
-            // exactly the width we calculated (w0 / w1), regardless of which real
-            // font the renderer substitutes for "Helvetica Neue" on a given
-            // device. Without this, the anchor points above are still correct,
-            // but the segments themselves can render narrower or wider than our
-            // estimate assumed, throwing the whole pair off-center on hardware
-            // that measures glyphs differently than the AFM table we based the
-            // estimate on — exactly the mismatch that made "CAR 0" / "ARI 0"
-            // visibly shift left on a real Stream Deck despite the boundary math
-            // itself being centered.
+            const GAP = fs * 0.28;
             return (
-                `<text x="${boundary.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="end" fill="${parts[0].color || color || 'white'}" ` +
-                `font-family="Helvetica Neue,Arial,sans-serif" font-size="${fs}" font-weight="600" ` +
-                `textLength="${w0.toFixed(2)}" lengthAdjust="spacingAndGlyphs">${escXml(parts[0].text)}</text>` +
-                `<text x="${(boundary + GAP).toFixed(1)}" y="${y.toFixed(1)}" text-anchor="start" fill="${parts[1].color || color || 'white'}" ` +
-                `font-family="Helvetica Neue,Arial,sans-serif" font-size="${fs}" font-weight="600" ` +
-                `textLength="${w1.toFixed(2)}" lengthAdjust="spacingAndGlyphs">${escXml(parts[1].text)}</text>`
+                `<text x="36" y="${y.toFixed(1)}" text-anchor="middle" ` +
+                `font-family="Helvetica Neue,Arial,sans-serif" font-size="${fs}" font-weight="600">` +
+                `<tspan fill="${parts[0].color || color || 'white'}">${escXml(parts[0].text)}</tspan>` +
+                `<tspan dx="${GAP.toFixed(1)}" fill="${parts[1].color || color || 'white'}">${escXml(parts[1].text)}</tspan>` +
+                `</text>`
             );
         }
 

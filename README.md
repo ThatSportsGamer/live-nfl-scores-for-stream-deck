@@ -2,7 +2,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your buttons. Each button tracks one team and updates automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.2-green)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.3-green)
 
 ---
 
@@ -24,6 +24,9 @@ A Stream Deck plugin that shows live NFL scores directly on your buttons. Each b
 ---
 
 ## Recent Updates
+
+**v1.0.3.0**
+- Rebuilt the live-game score line centering again: the possession-color split now renders as two colored `<tspan>`s inside a single centered text element (the same native centering the clock line already used) instead of manually computing where two separate text elements should sit. This removes the dependency on guessing the device's real font metrics entirely, which is what was still causing `CAR 0` / `ARI 0` to drift off-center after the previous attempt.
 
 **v1.0.2.0**
 - Fixed live-game score lines (e.g. `CAR 0` / `ARI 0`) rendering visibly off-center on real Stream Deck hardware. The possession-color split was centered using assumed Helvetica-Bold glyph widths, but the device's actual text renderer measures glyphs slightly differently, throwing the math off. Each text segment now carries an explicit `textLength`/`lengthAdjust` so it renders at exactly the calculated width regardless of the real font substitution, making the centering accurate on-device.
