@@ -2,7 +2,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your buttons. Each button tracks one team and updates automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.8-green)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.9-green)
 
 ---
 
@@ -24,6 +24,9 @@ A Stream Deck plugin that shows live NFL scores directly on your buttons. Each b
 ---
 
 ## Recent Updates
+
+**v1.0.9.0**
+- Replaced the action and category icons (the small football-glyph placeholders) with the provided player-silhouette artwork, recolored white-on-transparent and sized down to the required 20×20 / 40×40 / 28×28 / 56×56, matching the branded look now used for the main plugin icon.
 
 **v1.0.8.0**
 - Replaced the plugin icon with the branded player-silhouette artwork (matching the style of the Live CFB Scores icon), resized to the required 256×256 / 512×512 (high-DPI) variants.
