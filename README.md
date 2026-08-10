@@ -2,7 +2,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your buttons. Each button tracks one team and updates automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.7-green)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.8-green)
 
 ---
 
@@ -24,6 +24,9 @@ A Stream Deck plugin that shows live NFL scores directly on your buttons. Each b
 ---
 
 ## Recent Updates
+
+**v1.0.8.0**
+- Replaced the plugin icon with the branded player-silhouette artwork (matching the style of the Live CFB Scores icon), resized to the required 256×256 / 512×512 (high-DPI) variants.
 
 **v1.0.7.0**
 - Bye weeks now show `BYE WEEK` instead of the generic `No Game`. Detected without any extra API call: if other teams have games in the current window but this one doesn't, that specifically means a bye — a normally-scheduled team can never actually go empty given the hold-until-Tuesday and 10-day-forward rules, only a bye (roughly double the usual gap between games) can push it past both.
