@@ -308,6 +308,7 @@ function handleEvent({ event, context, payload }) {
 
         case 'sendToPlugin':
             if (payload && payload.settings) {
+                log('sendToPlugin — settings:', JSON.stringify(payload.settings));
                 instances.set(context, payload.settings);
                 lastRender.delete(context);
                 refreshButton(context);
@@ -355,7 +356,7 @@ async function refreshButton(context) {
     }
 
     refreshing.add(context);
-    log('Refreshing', cfg.teamAbbr || cfg.teamId);
+    log('Refreshing', cfg.teamAbbr || cfg.teamId, '— bg:', JSON.stringify(resolveBgColor(cfg)));
     try {
         const game = await fetchTeamGame(cfg.teamId);
         currentGame.set(context, game || null);
@@ -876,20 +877,22 @@ function escXml(s) {
 // feature existed. This is deliberately only applied to the steady-state
 // button (pre-game/live/final/err) — the score-flash and end-of-game
 // fireworks effects keep using their own dynamic colors on top of it.
+// Returns { fill, opacity } instead of a single rgba(...) string on purpose —
+// this device's SVG renderer has already shown (see the tspan `dx` note
+// below) that it doesn't implement the full SVG/CSS spec, so a plain hex
+// `fill` plus a separate numeric `fill-opacity` attribute is the safer bet
+// than relying on functional color notation like rgba() being parsed.
 function resolveBgColor(cfg) {
-    if (!cfg || !cfg.bgColor) return 'black';
+    if (!cfg || !cfg.bgColor) return { fill: 'black', opacity: 1 };
     const hex = String(cfg.bgColor).replace('#', '');
-    if (!/^[0-9a-fA-F]{6}$/.test(hex)) return 'black';
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
+    if (!/^[0-9a-fA-F]{6}$/.test(hex)) return { fill: 'black', opacity: 1 };
     const opacityPct = cfg.bgOpacity != null ? Number(cfg.bgOpacity) : 100;
     const opacity     = Math.max(0, Math.min(100, isNaN(opacityPct) ? 100 : opacityPct)) / 100;
-    return `rgba(${r},${g},${b},${opacity})`;
+    return { fill: '#' + hex, opacity };
 }
 
 // Accepts an array of strings (auto-sized) or { text, fs, color } objects (explicit size).
-function makeImage(lines, lineSpacing = 1.4, bgColor = 'black') {
+function makeImage(lines, lineSpacing = 1.4, bgColor = 'black', bgOpacity = 1) {
     const W = 72, H = 72, PAD = 4, MAX_W = W - PAD * 2;
 
     const items = lines.map(l => {
@@ -949,7 +952,7 @@ function makeImage(lines, lineSpacing = 1.4, bgColor = 'black') {
 
     const svg =
         `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="144" height="144" overflow="hidden">` +
-        `<rect width="${W}" height="${H}" fill="${bgColor}"/>` +
+        `<rect width="${W}" height="${H}" fill="${bgColor}" fill-opacity="${bgOpacity}"/>` +
         rows + `</svg>`;
 
     return 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
@@ -1017,13 +1020,17 @@ async function playFireworks(context, winnerName, winnerColor) {
     }
 }
 
+// bgColor may be a plain CSS color string (flash colors, 'black') or a
+// { fill, opacity } object (resolveBgColor's output) — normalized to the
+// latter here so makeImage always gets a fill string + numeric opacity.
 function setButton(context, lines, lineSpacing, bgColor, force) {
-    const key = JSON.stringify({ lines, bgColor });
+    const bg = (bgColor && typeof bgColor === 'object') ? bgColor : { fill: bgColor || 'black', opacity: 1 };
+    const key = JSON.stringify({ lines, bg });
     if (!force) {
         if (lastRender.get(context) === key) return; // skip if unchanged
         lastRender.set(context, key);
     }
-    ws.send(JSON.stringify({ event: 'setImage', context, payload: { image: makeImage(lines, lineSpacing, bgColor), target: 0 } }));
+    ws.send(JSON.stringify({ event: 'setImage', context, payload: { image: makeImage(lines, lineSpacing, bg.fill, bg.opacity), target: 0 } }));
 }
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
