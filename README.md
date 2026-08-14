@@ -2,7 +2,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your buttons. Each button tracks one team and updates automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.9-green)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.10-green)
 
 ---
 
@@ -19,11 +19,15 @@ A Stream Deck plugin that shows live NFL scores directly on your buttons. Each b
 - **Bye-week shortcut** — if your team has no game scheduled, pressing the button opens that team's full schedule on ESPN instead
 - **No-flicker updates** — buttons only redraw when the display actually changes
 - **Multi-button support** — add as many team buttons as you want, each refreshes independently
+- **Custom background color** — set a per-button background color and opacity in the settings panel, handy for telling teams apart at a glance across multiple buttons
 - **All 32 NFL teams** across all 8 divisions (AFC East, North, South, West and NFC East, North, South, West)
 
 ---
 
 ## Recent Updates
+
+**v1.0.10.0**
+- Added a custom background color option in the settings panel: toggle it on, pick a color, and adjust its opacity. Useful for telling teams apart at a glance when you've got several buttons configured (e.g. your Falcons button in red, your Panthers button in blue). Off by default — buttons keep the original plain black background unless you turn it on. Applies to the normal score display; the score-flash and end-of-game fireworks animations still use their own colors on top of it.
 
 **v1.0.9.0**
 - Replaced the action and category icons (the small football-glyph placeholders) with the provided player-silhouette artwork, recolored white-on-transparent and sized down to the required 20×20 / 40×40 / 28×28 / 56×56, matching the branded look now used for the main plugin icon. Centered on the pose's visual mass rather than its raw bounding box — the bbox was already symmetric, but the bulkier shoulder-pad geometry on one side still read as visibly off-center to the eye.

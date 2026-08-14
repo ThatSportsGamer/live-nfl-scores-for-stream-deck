@@ -153,6 +153,62 @@
         }
 
         .info-box strong { color: var(--text); }
+
+        /* ── Background color ── */
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .checkbox-row input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            accent-color: var(--accent-hi);
+            cursor: pointer;
+        }
+
+        .checkbox-row label {
+            margin: 0;
+            text-transform: none;
+            letter-spacing: normal;
+            font-size: 12px;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .bg-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .bg-controls.disabled { opacity: .4; pointer-events: none; }
+
+        input[type="color"] {
+            width: 34px;
+            height: 28px;
+            padding: 0;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface);
+            cursor: pointer;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent-hi);
+            cursor: pointer;
+        }
+
+        .opacity-value {
+            width: 34px;
+            text-align: right;
+            font-size: 11px;
+            color: #aaa;
+        }
     </style>
 </head>
 <body>
@@ -195,6 +251,19 @@
 
 <div class="selected-team" id="selectedTeamInfo">
     Tracking: <span id="selectedTeamName"></span>
+</div>
+
+<div class="field" style="margin-top: 16px;">
+    <label>Key Background</label>
+    <div class="checkbox-row">
+        <input type="checkbox" id="bgEnabled"/>
+        <label for="bgEnabled">Use a custom background color</label>
+    </div>
+    <div class="bg-controls disabled" id="bgControls">
+        <input type="color" id="bgColorInput" value="#000000"/>
+        <input type="range" id="bgOpacityInput" min="10" max="100" value="100"/>
+        <span class="opacity-value" id="bgOpacityValue">100%</span>
+    </div>
 </div>
 
 <div class="info-box">
@@ -257,6 +326,11 @@
     var actionContext = null;
     var actionUUID    = null;
     var savedTeamId   = null;
+
+    // Current settings blob — kept in sync with the form and sent as one
+    // merged object so changing the team doesn't clobber the background
+    // color (and vice versa).
+    var currentSettings = { teamId: null, teamAbbr: null, bgColor: null, bgOpacity: 100 };
 
     // ── Autocomplete ──────────────────────────────────────────────────────────
     var acList      = document.getElementById('autocompleteList');
@@ -365,7 +439,9 @@
         }
 
         showSelectedTeamBanner(name);
-        saveSettings(value, abbr);
+        currentSettings.teamId   = value;
+        currentSettings.teamAbbr = abbr;
+        saveSettings();
     }
 
     function showSelectedTeamBanner(name) {
@@ -381,24 +457,73 @@
 
     // ── Settings ──────────────────────────────────────────────────────────────
     function applySettings(settings) {
-        if (!settings || !settings.teamId) return;
-        savedTeamId = settings.teamId;
-        var team = TEAMS.find(function(t) { return t.value === settings.teamId; });
-        if (team) {
-            searchBox.value = team.name;
-            document.getElementById('confSelect').value = team.conf;
-            renderTeamSelect();
-            document.getElementById('teamSelect').value = team.value;
-            showSelectedTeamBanner(team.name);
+        if (!settings) return;
+        currentSettings.teamId    = settings.teamId    || null;
+        currentSettings.teamAbbr  = settings.teamAbbr   || null;
+        currentSettings.bgColor   = settings.bgColor    || null;
+        currentSettings.bgOpacity = settings.bgOpacity != null ? settings.bgOpacity : 100;
+
+        if (settings.teamId) {
+            savedTeamId = settings.teamId;
+            var team = TEAMS.find(function(t) { return t.value === settings.teamId; });
+            if (team) {
+                searchBox.value = team.name;
+                document.getElementById('confSelect').value = team.conf;
+                renderTeamSelect();
+                document.getElementById('teamSelect').value = team.value;
+                showSelectedTeamBanner(team.name);
+            }
         }
+
+        var bgEnabled  = document.getElementById('bgEnabled');
+        var bgControls = document.getElementById('bgControls');
+        var bgColor    = document.getElementById('bgColorInput');
+        var bgOpacity  = document.getElementById('bgOpacityInput');
+        var bgOpacityLabel = document.getElementById('bgOpacityValue');
+
+        bgEnabled.checked = !!currentSettings.bgColor;
+        bgColor.value     = currentSettings.bgColor || '#000000';
+        bgOpacity.value   = currentSettings.bgOpacity;
+        bgOpacityLabel.textContent = currentSettings.bgOpacity + '%';
+        bgControls.classList.toggle('disabled', !bgEnabled.checked);
     }
 
-    function saveSettings(value, abbr) {
-        if (!websocket || !value) return;
-        var payload = { teamId: value, teamAbbr: abbr };
+    function saveSettings() {
+        if (!websocket) return;
+        var payload = {
+            teamId:    currentSettings.teamId,
+            teamAbbr:  currentSettings.teamAbbr,
+            bgColor:   currentSettings.bgColor,
+            bgOpacity: currentSettings.bgOpacity
+        };
         websocket.send(JSON.stringify({ event: 'setSettings',  context: uuid,        payload: payload }));
         websocket.send(JSON.stringify({ event: 'sendToPlugin', context: uuid, action: actionUUID, payload: { event: 'settingsChanged', settings: payload } }));
     }
+
+    // ── Background color controls ─────────────────────────────────────────────
+    var bgEnabledEl     = document.getElementById('bgEnabled');
+    var bgControlsEl    = document.getElementById('bgControls');
+    var bgColorInputEl  = document.getElementById('bgColorInput');
+    var bgOpacityInputEl = document.getElementById('bgOpacityInput');
+    var bgOpacityValueEl = document.getElementById('bgOpacityValue');
+
+    bgEnabledEl.addEventListener('change', function() {
+        bgControlsEl.classList.toggle('disabled', !bgEnabledEl.checked);
+        currentSettings.bgColor = bgEnabledEl.checked ? bgColorInputEl.value : null;
+        saveSettings();
+    });
+
+    bgColorInputEl.addEventListener('input', function() {
+        if (!bgEnabledEl.checked) return;
+        currentSettings.bgColor = bgColorInputEl.value;
+        saveSettings();
+    });
+
+    bgOpacityInputEl.addEventListener('input', function() {
+        bgOpacityValueEl.textContent = bgOpacityInputEl.value + '%';
+        currentSettings.bgOpacity = parseInt(bgOpacityInputEl.value, 10);
+        if (bgEnabledEl.checked) saveSettings();
+    });
 
     // ── Division dropdown change ──────────────────────────────────────────────
     document.getElementById('confSelect').addEventListener('change', function() {
@@ -416,7 +541,9 @@
         savedTeamId     = sel.value;
         searchBox.value = name;
         showSelectedTeamBanner(name);
-        saveSettings(sel.value, abbr);
+        currentSettings.teamId   = sel.value;
+        currentSettings.teamAbbr = abbr;
+        saveSettings();
     });
 
     // ── Stream Deck WebSocket ─────────────────────────────────────────────────

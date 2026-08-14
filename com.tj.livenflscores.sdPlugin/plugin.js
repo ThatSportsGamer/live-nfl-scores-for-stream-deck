@@ -419,7 +419,7 @@ async function refreshButton(context) {
                                      : teamColor(game.homeId);
                     log('Score change — flashing', color);
                     refreshing.delete(context);
-                    flashButton(context, color, lines, spacing).catch(e => log('flashButton error:', e.message));
+                    flashButton(context, color, lines, spacing, resolveBgColor(cfg)).catch(e => log('flashButton error:', e.message));
                     return;
                 }
             }
@@ -427,10 +427,10 @@ async function refreshButton(context) {
             prevScores.delete(context);
         }
 
-        setButton(context, lines, spacing);
+        setButton(context, lines, spacing, resolveBgColor(cfg));
     } catch (err) {
         log('Fetch error:', err.message);
-        setButton(context, [cfg.teamAbbr || 'NFL', 'Err']);
+        setButton(context, [cfg.teamAbbr || 'NFL', 'Err'], undefined, resolveBgColor(cfg));
     } finally {
         refreshing.delete(context);
     }
@@ -870,6 +870,24 @@ function escXml(s) {
         ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
 }
 
+// Turns a user-chosen hex color + opacity (0-100) from the property inspector
+// into a CSS color the SVG <rect> can use directly. Falls back to plain black
+// for anyone who hasn't set a custom background — same look as before this
+// feature existed. This is deliberately only applied to the steady-state
+// button (pre-game/live/final/err) — the score-flash and end-of-game
+// fireworks effects keep using their own dynamic colors on top of it.
+function resolveBgColor(cfg) {
+    if (!cfg || !cfg.bgColor) return 'black';
+    const hex = String(cfg.bgColor).replace('#', '');
+    if (!/^[0-9a-fA-F]{6}$/.test(hex)) return 'black';
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const opacityPct = cfg.bgOpacity != null ? Number(cfg.bgOpacity) : 100;
+    const opacity     = Math.max(0, Math.min(100, isNaN(opacityPct) ? 100 : opacityPct)) / 100;
+    return `rgba(${r},${g},${b},${opacity})`;
+}
+
 // Accepts an array of strings (auto-sized) or { text, fs, color } objects (explicit size).
 function makeImage(lines, lineSpacing = 1.4, bgColor = 'black') {
     const W = 72, H = 72, PAD = 4, MAX_W = W - PAD * 2;
@@ -999,28 +1017,30 @@ async function playFireworks(context, winnerName, winnerColor) {
     }
 }
 
-function setButton(context, lines, lineSpacing, bgColor) {
-    const key = JSON.stringify(lines);
-    if (!bgColor && lastRender.get(context) === key) return; // skip if unchanged
-    if (!bgColor) lastRender.set(context, key);
+function setButton(context, lines, lineSpacing, bgColor, force) {
+    const key = JSON.stringify({ lines, bgColor });
+    if (!force) {
+        if (lastRender.get(context) === key) return; // skip if unchanged
+        lastRender.set(context, key);
+    }
     ws.send(JSON.stringify({ event: 'setImage', context, payload: { image: makeImage(lines, lineSpacing, bgColor), target: 0 } }));
 }
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-async function flashButton(context, color, lines, spacing) {
+async function flashButton(context, color, lines, spacing, restColor = 'black') {
     if (flashing.has(context)) return;
     flashing.add(context);
     log('→ flash', color);
     try {
         for (let i = 0; i < 4; i++) {
-            setButton(context, lines, spacing, color);
+            setButton(context, lines, spacing, color, true);
             await sleep(200);
-            setButton(context, lines, spacing, 'black');
+            setButton(context, lines, spacing, restColor, true);
             await sleep(200);
         }
     } finally {
         flashing.delete(context);
-        setButton(context, lines, spacing, 'black');
+        setButton(context, lines, spacing, restColor, true);
     }
 }
