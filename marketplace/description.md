@@ -6,17 +6,28 @@ Live NFL Scores
 ## Short tagline (optional, if Marketplace supports one)
 Live NFL scores on every button.
 
-## Description (≈1,230 characters — under the 1,500 limit)
+## Overview
 
-Track live NFL scores directly on your Stream Deck. Each button follows one team and refreshes automatically every 30 seconds — 15 seconds during the two-minute warning, so you don't miss a crunch-time score — with no browser tab, no app switching, and no missed touchdowns.
+Shows live NFL scores on your Stream Deck.
 
-See the score, quarter, and game clock at a glance, with a possession indicator and red-zone highlighting for extra context during close games. Buttons flash in your team's colors when they score, and a short fireworks animation plays when they win. Before kickoff, see the matchup and scheduled time; after the game, catch the final score with OT labeling, and BYE WEEK shows automatically on a team's off week.
+Each button tracks one team — see the current score, quarter, clock, and possession at a glance.
 
-Tracking more than one team? Give each button its own background color and opacity right from the settings panel, so your Cowboys and Eagles buttons are never a guessing game.
+**Setup**
 
-Search by team or city name, or browse by division — all 32 NFL teams across all 8 divisions are supported (AFC East, North, South, West and NFC East, North, South, West).
+1. Drag the **Live NFL Scores** action onto any button
+2. In the settings panel on the right, search for your team or browse by division
+3. (Optional) Turn on a custom background color and opacity so buttons for different teams are easy to tell apart
+4. That's it. The button will load your team's current or upcoming game within a few seconds and refresh every 30 seconds from there — 15 seconds during the two-minute warning.
 
-Press any button to jump straight to ESPN Gamecast for that game, or to your team's schedule if nothing's on tap. No account or API key required — scores come from ESPN's public scoreboard API.
+**Note:** Pressing the button opens the game in ESPN Gamecast, or your team's schedule on ESPN if there's no game, including bye weeks.
+
+**How It Works**
+
+The plugin polls ESPN's public NFL scoreboard API once every 30 seconds per button — 15 seconds during the two-minute warning of the 2nd or 4th quarter, so a fast-moving crunch-time sequence isn't missed between refreshes. No API key or account is required. The plugin is fully self-contained — it uses only Node.js built-in modules and requires no external dependencies. Because NFL teams play roughly once a week, the plugin always shows the most relevant game for your team: live beats upcoming beats last week's final. A final score holds steady through the following Tuesday at 3:00 AM ET instead of flipping to the next matchup as soon as it's scheduled, and BYE WEEK shows automatically on a team's off week.
+
+**Disclaimer**
+
+This plugin is not affiliated with, endorsed by, or sponsored by the NFL, ESPN, or any team. All data is sourced from ESPN's public scoreboard API and is subject to ESPN's terms of use. This plugin is intended for individual, personal, non-commercial use only.
 
 ## Tags / keywords to include
 NFL, football, football scores, live scores, sports, ESPN, scoreboard, AFC, NFC, gameday
