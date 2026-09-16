@@ -698,6 +698,55 @@ function nextTuesday3amAfter(fromMs) {
     return candidate.getTime();
 }
 
+// ── Shared week-window cache ────────────────────────────────────────────────
+// ESPN's `dates=<range>` scoreboard query — previously how this plugin pulled
+// a ±10-day window in one request — started returning a flat HTTP 400 for
+// ANY multi-day range (even a single explicit one-day range), which is what
+// showed up on every button as `Err`. Only a bare request (ESPN's own notion
+// of "the current week") or a request scoped to `week` + `seasontype` still
+// works, so the ±10-day window is rebuilt from up to three requests instead
+// of one: this week, last week, and next week. Those three are merged into a
+// single event list and cached briefly — shared across every button's
+// refresh — so several configured buttons don't triple (or multiply further)
+// the request volume against ESPN's API.
+let weekWindowCache     = null;
+let weekWindowCacheTime = 0;
+const WEEK_WINDOW_TTL_MS = 20_000;
+const SCOREBOARD_URL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
+
+async function fetchWeekWindow() {
+    if (weekWindowCache && (Date.now() - weekWindowCacheTime) < WEEK_WINDOW_TTL_MS) {
+        return weekWindowCache;
+    }
+
+    const current   = await fetchJson(SCOREBOARD_URL);
+    const allEvents = Array.isArray(current.events) ? current.events.slice() : [];
+
+    const weekNum    = current.week && current.week.number;
+    const seasonType = current.leagues && current.leagues[0] && current.leagues[0].season &&
+                        current.leagues[0].season.type && current.leagues[0].season.type.type;
+
+    if (weekNum != null && seasonType != null) {
+        // Skip week 0 — there is no "week before week 1" to ask ESPN for.
+        const neighborWeeks = weekNum > 1 ? [weekNum - 1, weekNum + 1] : [weekNum + 1];
+        const results = await Promise.allSettled(
+            neighborWeeks.map(w => fetchJson(`${SCOREBOARD_URL}?week=${w}&seasontype=${seasonType}`))
+        );
+        for (const r of results) {
+            if (r.status === 'fulfilled' && Array.isArray(r.value.events)) {
+                allEvents.push(...r.value.events);
+            } else if (r.status === 'rejected') {
+                log('Week window neighbor fetch failed:', r.reason && r.reason.message);
+            }
+        }
+    }
+
+    const data = { events: allEvents };
+    weekWindowCache     = data;
+    weekWindowCacheTime = Date.now();
+    return data;
+}
+
 function fetchTeamGame(teamId) {
     // hasOwnProperty (not just truthiness) so a `null` entry — used to force the
     // "No Game" state — is honored instead of falling through to the real API.
@@ -709,22 +758,7 @@ function fetchTeamGame(teamId) {
     // Don't roll to the next day's slate until 2am — covers late-running games
     if (!DEBUG_ANCHOR_DATE && now.getHours() < 2) now.setDate(now.getDate() - 1);
 
-    const fmt = d => d.getFullYear() +
-        String(d.getMonth() + 1).padStart(2, '0') +
-        String(d.getDate()).padStart(2, '0');
-
-    // NFL teams play roughly one game per week, not daily — pull a 21-day
-    // window (ten days back, ten days ahead) and pick the most relevant
-    // game for this team out of it. This comfortably covers a bye week
-    // with margin to spare, while staying well under ESPN's default
-    // response cap for a single week's scoreboard.
-    const start = new Date(now); start.setDate(start.getDate() - 10);
-    const end   = new Date(now); end.setDate(end.getDate() + 10);
-
-    const url = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard' +
-        '?dates=' + fmt(start) + '-' + fmt(end);
-
-    return fetchJson(url).then(data => parseGames(data, teamId, now));
+    return fetchWeekWindow().then(data => parseGames(data, teamId, now));
 }
 
 // Pick the single most relevant event for this team out of a multi-week scoreboard:

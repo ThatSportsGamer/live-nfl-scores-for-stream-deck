@@ -2,7 +2,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your buttons. Each button tracks one team and updates automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.10-green)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.11-green)
 
 ---
 
@@ -25,6 +25,9 @@ A Stream Deck plugin that shows live NFL scores directly on your buttons. Each b
 ---
 
 ## Recent Updates
+
+**v1.0.11.0**
+- Fixed every button showing `Err`: ESPN changed its scoreboard API to reject the multi-day `dates=<range>` query this plugin used to pull a team's ±10-day window in one request — even a single-day range now gets a flat HTTP 400. Rebuilt the same coverage (last week's final, this week, next week) from up to three requests scoped to `week` + `seasontype` instead, the one query shape ESPN still accepts, merged into one event list and cached for 20 seconds so multiple buttons share the same fetch instead of multiplying requests.
 
 **v1.0.10.0**
 - Added a custom background color option in the settings panel: toggle it on, pick a color, and adjust its opacity. Useful for telling teams apart at a glance when you've got several buttons configured (e.g. your Falcons button in red, your Panthers button in blue). Off by default — buttons keep the original plain black background unless you turn it on. Applies to the normal score display; the score-flash and end-of-game fireworks animations still use their own colors on top of it.
