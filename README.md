@@ -2,7 +2,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your buttons. Each button tracks one team and updates automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.11-green)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.12-green)
 
 ---
 
@@ -16,6 +16,7 @@ A Stream Deck plugin that shows live NFL scores directly on your buttons. Each b
 - **Score-change flash** — when a team scores, the button flashes in that team's primary color
 - **End-of-game fireworks** — a short celebratory animation in the winning team's colors plays when the game ends
 - **Gamecast shortcut** — press any button to open that game directly in ESPN Gamecast
+- **Custom link** — optionally send button presses to a link of your choice (like a regional broadcast page) once the game has started, instead of Gamecast
 - **Bye-week shortcut** — if your team has no game scheduled, pressing the button opens that team's full schedule on ESPN instead
 - **No-flicker updates** — buttons only redraw when the display actually changes
 - **Multi-button support** — add as many team buttons as you want, each refreshes independently
@@ -25,6 +26,9 @@ A Stream Deck plugin that shows live NFL scores directly on your buttons. Each b
 ---
 
 ## Recent Updates
+
+**v1.0.12.0**
+- Added a "Button Press Opens" option in the settings panel: choose ESPN Gamecast (the default) or a Custom Link. A custom link only takes over once the game has actually started — before that, and whenever there's no game, the button still falls back to Gamecast (or the team's schedule) so it's never a dead end.
 
 **v1.0.11.0**
 - Fixed every button showing `Err`: ESPN changed its scoreboard API to reject the multi-day `dates=<range>` query this plugin used to pull a team's ±10-day window in one request — even a single-day range now gets a flat HTTP 400. Rebuilt the same coverage (last week's final, this week, next week) from up to three requests scoped to `week` + `seasontype` instead, the one query shape ESPN still accepts, merged into one event list and cached for 20 seconds so multiple buttons share the same fetch instead of multiplying requests.

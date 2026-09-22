@@ -17,9 +17,10 @@ Each button tracks one team — see the current score, quarter, clock, and posse
 1. Drag the **Live NFL Scores** action onto any button
 2. In the settings panel on the right, search for your team or browse by division
 3. (Optional) Turn on a custom background color and opacity so buttons for different teams are easy to tell apart
-4. That's it. The button will load your team's current or upcoming game within a few seconds and refresh every 30 seconds from there — 15 seconds during the two-minute warning.
+4. (Optional) Under "Button Press Opens," switch from ESPN Gamecast to a Custom Link — handy for a regional broadcast page or any other link you'd rather use once the game starts
+5. That's it. The button will load your team's current or upcoming game within a few seconds and refresh every 30 seconds from there — 15 seconds during the two-minute warning.
 
-**Note:** Pressing the button opens the game in ESPN Gamecast, or your team's schedule on ESPN if there's no game, including bye weeks.
+**Note:** Pressing the button opens ESPN Gamecast (or your custom link, once the game has started), or your team's schedule on ESPN if there's no game, including bye weeks.
 
 **How It Works**
 
@@ -32,12 +33,13 @@ This plugin is not affiliated with, endorsed by, or sponsored by the NFL, ESPN, 
 ## Tags / keywords to include
 NFL, football, football scores, live scores, sports, ESPN, scoreboard, AFC, NFC, gameday
 
-## Release notes for this submission (v1.0.10.0)
+## Release notes for this submission (v1.0.12.0)
+- Added a "Button Press Opens" setting: choose ESPN Gamecast (default) or a Custom Link. The custom link only takes over once the game has actually started — before that, and whenever there's no game, the button falls back to Gamecast (or the team's schedule)
+- Fixed every button showing `Err` after ESPN changed its scoreboard API to reject the multi-day date-range query this plugin relied on
 - Custom key background color and opacity, set per button in the settings panel — makes it easy to tell teams apart across multiple buttons
 - Adaptive refresh: polls every 15 seconds during the two-minute warning instead of 30, so late-game scoring plays aren't missed
 - BYE WEEK detection for teams with no game that week
 - Final score now holds steady through the following Tuesday at 3:00 AM ET instead of flipping to the next matchup as soon as it's scheduled
 - Fixed possession indicator briefly flashing blank around scoring plays
-- Fixed an ESPN edge-network issue that could show an `Err` state
 - Centered, correctly-spaced live score lines on real hardware
 - Branded plugin, action, and category icons

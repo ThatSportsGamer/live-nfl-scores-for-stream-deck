@@ -288,8 +288,10 @@ function handleEvent({ event, context, payload }) {
         case 'keyUp': {
             const game = currentGame.get(context);
             if (game && game.link) {
-                log('keyUp — opening URL:', game.link);
-                ws.send(JSON.stringify({ event: 'openUrl', payload: { url: game.link } }));
+                const cfg = instances.get(context) || {};
+                const url = buildGameUrl(game, cfg.linkType, cfg.customUrl);
+                log('keyUp — opening URL:', url);
+                ws.send(JSON.stringify({ event: 'openUrl', payload: { url } }));
             } else {
                 const cfg    = instances.get(context) || {};
                 const teamId = cfg.teamId;
@@ -897,6 +899,23 @@ function fmtTime(iso, now) {
         const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
         return day + ' ' + time;
     } catch (e) { return '?:??'; }
+}
+
+// ── Button-press link ─────────────────────────────────────────────────────────
+// Resolves what pressing the button should open. Defaults to (and always
+// falls back to) ESPN Gamecast — the one link guaranteed to exist for a
+// preview, live, or final game. A configured custom link only takes over
+// once the game has actually started (live/final/delay): a regional
+// broadcast page or similar generally has nothing useful to show before
+// that, so sending the user there early would just be a dead end.
+function buildGameUrl(game, linkType, customUrl) {
+    const gamecastUrl = game.link;
+    if (linkType === 'custom' && customUrl) {
+        const gameStarted = game.state === 'live' || game.state === 'final' || game.state === 'delay';
+        if (gameStarted) return customUrl;
+        log('Custom link requested but game has not started (state=' + game.state + ') — falling back to Gamecast');
+    }
+    return gamecastUrl;
 }
 
 // ── SVG button renderer ───────────────────────────────────────────────────────

@@ -260,6 +260,20 @@
     Tracking: <span id="selectedTeamName"></span>
 </div>
 
+<div class="field" style="margin-top: 14px;">
+    <label for="linkType">Button Press Opens</label>
+    <select id="linkType">
+        <option value="gamecast">ESPN Gamecast (free)</option>
+        <option value="custom">Custom Link</option>
+    </select>
+</div>
+
+<div class="field" id="customUrlField" style="display:none;">
+    <label for="customUrlInput">Custom URL</label>
+    <input type="text" id="customUrlInput" placeholder="e.g. https://www.foxsports.com/live/your-rsn"/>
+    <div class="bg-hint">Opens ESPN Gamecast until the game actually starts, then this URL instead — handy for a regional broadcast page or any other link you'd rather use.</div>
+</div>
+
 <div class="field" style="margin-top: 16px;">
     <label>Key Background</label>
     <div class="checkbox-row">
@@ -277,7 +291,7 @@
 <div class="info-box">
     <strong>How it works:</strong><br>
     • Scores refresh automatically every <strong>30 seconds</strong> (<strong>15 seconds</strong> during the two-minute warning)<br>
-    • Press the button anytime to open the game in ESPN Gamecast, or your team's schedule if nothing's on tap<br>
+    • Press the button anytime to open ESPN Gamecast (or your own custom link, once the game's started) — or your team's schedule if nothing's on tap<br>
     • Shows score, quarter, clock, and possession during live games<br>
     • Shows matchup and kickoff time before the game<br>
     • Red-zone highlighting and a final score with OT label when the game ends
@@ -338,7 +352,7 @@
     // Current settings blob — kept in sync with the form and sent as one
     // merged object so changing the team doesn't clobber the background
     // color (and vice versa).
-    var currentSettings = { teamId: null, teamAbbr: null, bgColor: null, bgOpacity: 100 };
+    var currentSettings = { teamId: null, teamAbbr: null, linkType: 'gamecast', customUrl: '', bgColor: null, bgOpacity: 100 };
 
     // ── Autocomplete ──────────────────────────────────────────────────────────
     var acList      = document.getElementById('autocompleteList');
@@ -464,10 +478,27 @@
     }
 
     // ── Settings ──────────────────────────────────────────────────────────────
+    // Most people type "google.com" or "www.foxsports.com/..." without a scheme —
+    // the browser needs http(s):// or openUrl silently does nothing. Default to
+    // https:// rather than guessing http, since that's the safer/more common case.
+    function normalizeUrl(raw) {
+        var url = (raw || '').trim();
+        if (!url) return '';
+        if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(url)) url = 'https://' + url;
+        return url;
+    }
+
+    function toggleCustomUrlField() {
+        var linkSel = document.getElementById('linkType');
+        document.getElementById('customUrlField').style.display = (linkSel.value === 'custom') ? 'block' : 'none';
+    }
+
     function applySettings(settings) {
         if (!settings) return;
         currentSettings.teamId    = settings.teamId    || null;
         currentSettings.teamAbbr  = settings.teamAbbr   || null;
+        currentSettings.linkType  = settings.linkType   || 'gamecast';
+        currentSettings.customUrl = settings.customUrl  || '';
         currentSettings.bgColor   = settings.bgColor    || null;
         currentSettings.bgOpacity = settings.bgOpacity != null ? settings.bgOpacity : 100;
 
@@ -482,6 +513,10 @@
                 showSelectedTeamBanner(team.name);
             }
         }
+
+        document.getElementById('linkType').value = currentSettings.linkType;
+        document.getElementById('customUrlInput').value = currentSettings.customUrl;
+        toggleCustomUrlField();
 
         var bgEnabled  = document.getElementById('bgEnabled');
         var bgControls = document.getElementById('bgControls');
@@ -501,12 +536,37 @@
         var payload = {
             teamId:    currentSettings.teamId,
             teamAbbr:  currentSettings.teamAbbr,
+            linkType:  currentSettings.linkType,
+            customUrl: currentSettings.customUrl,
             bgColor:   currentSettings.bgColor,
             bgOpacity: currentSettings.bgOpacity
         };
         websocket.send(JSON.stringify({ event: 'setSettings',  context: uuid,        payload: payload }));
         websocket.send(JSON.stringify({ event: 'sendToPlugin', context: uuid, action: actionUUID, payload: { event: 'settingsChanged', settings: payload } }));
     }
+
+    // ── Button-press link controls ────────────────────────────────────────────
+    var linkTypeEl    = document.getElementById('linkType');
+    var customUrlEl   = document.getElementById('customUrlInput');
+
+    linkTypeEl.addEventListener('change', function() {
+        currentSettings.linkType = linkTypeEl.value;
+        toggleCustomUrlField();
+        saveSettings();
+    });
+
+    customUrlEl.addEventListener('input', function() {
+        currentSettings.customUrl = normalizeUrl(customUrlEl.value);
+        saveSettings();
+    });
+
+    // Rewrite the field to the normalized (scheme-prefixed) value once the user
+    // leaves it, so what they see matches what actually gets saved and opened —
+    // done on blur rather than every keystroke so it doesn't fight the cursor
+    // while typing.
+    customUrlEl.addEventListener('blur', function() {
+        customUrlEl.value = normalizeUrl(customUrlEl.value);
+    });
 
     // ── Background color controls ─────────────────────────────────────────────
     var bgEnabledEl     = document.getElementById('bgEnabled');
