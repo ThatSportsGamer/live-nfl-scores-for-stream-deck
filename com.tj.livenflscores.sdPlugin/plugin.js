@@ -901,7 +901,7 @@ function fmtTime(iso, now) {
     } catch (e) { return '?:??'; }
 }
 
-// ── Button-press link ─────────────────────────────────────────────────────────
+// ── Key-press link ─────────────────────────────────────────────────────────
 // Resolves what pressing the button should open. Defaults to (and always
 // falls back to) ESPN Gamecast — the one link guaranteed to exist for a
 // preview, live, or final game. A configured custom link only takes over

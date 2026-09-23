@@ -1,7 +1,7 @@
 {
     "Author": "T.J. Lauerman aka ThatSportsGamer",
     "CodePath": "plugin.js",
-    "Description": "Shows live NFL scores on your Stream Deck. Each button tracks one team — see the current score, quarter, clock, and possession at a glance.",
+    "Description": "Shows live NFL scores on your Stream Deck. Each key tracks one team — see the current score, quarter, clock, and possession at a glance.",
     "Name": "Live NFL Scores",
     "UUID": "com.tj.livenflscores",
     "Category": "Live Sports Scores",
