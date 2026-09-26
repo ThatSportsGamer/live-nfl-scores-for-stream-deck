@@ -1,5 +1,7 @@
 # Live NFL Scores — Stream Deck Plugin
 
+![Live NFL Scores in action](assets/LiveNFLScoresThumbnail.png)
+
 A Stream Deck plugin that shows live NFL scores directly on your keys. Each key tracks one team and updates automatically every 30 seconds.
 
 ![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.13-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
