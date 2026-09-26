@@ -2,7 +2,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your keys. Each key tracks one team and updates automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.12-green)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.13-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
 
 ---
 
@@ -26,6 +26,12 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Each key 
 ---
 
 ## Recent Updates
+
+**v1.0.13.0**
+- Custom Link now switches back to ESPN Gamecast 30 minutes after the final whistle — matches the MLB, MiLB, CFB, and NHL plugins (previously it stayed on your link until the next game)
+- Fixed a background refresh that could keep running after a key was removed or you switched pages/profiles mid-update
+- Custom Link URLs are also tidied up by the plugin itself (spaces trimmed, https:// added if missing, non-web links ignored) — a backstop for links saved before the settings panel started doing this
+- Turned off Node debug mode for release builds
 
 **v1.0.12.0**
 - Added a "Key Press Opens" option in the settings panel: choose ESPN Gamecast (the default) or a Custom Link. A custom link only takes over once the game has actually started — before that, and whenever there's no game, the key still falls back to Gamecast (or the team's schedule) so it's never a dead end.
@@ -80,9 +86,15 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Each key 
 
 ## Installation
 
+**Elgato Marketplace (recommended)**
+
+1. Open **[Live NFL Scores on the Elgato Marketplace](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)** and install it from there
+2. The plugin will appear in the Stream Deck action picker under **Live NFL Scores**
+
+**Manual install**
+
 1. Download the latest **`Live NFL Scores.streamDeckPlugin`** from the [Releases](../../releases) page
 2. Double-click the file — Stream Deck will install it automatically
-3. The plugin will appear in the Stream Deck action picker under **Live NFL Scores**
 
 ---
 
@@ -95,6 +107,8 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Each key 
 ---
 
 ## What the Key Shows
+
+![Live NFL Scores key states](assets/button-states.png)
 
 **Before the game:**
 ```

@@ -227,6 +227,7 @@ const refreshing      = new Set(); // contexts mid-async refresh
 const lastRender       = new Map(); // context -> JSON key of last rendered lines
 const currentGame      = new Map(); // context -> parsed game object | null
 const refreshTimers    = new Map(); // context -> timeoutId (self-rescheduling; cadence varies, see scheduleNextRefresh)
+const gameFinalAt       = new Map(); // context -> timestamp when live→final was detected (drives the Custom Link post-final grace window)
 const lastPossession    = new Map(); // context -> { eventId, possession, isRedZone } — last known-good possession for the current game
 
 // ── Connect to Stream Deck ────────────────────────────────────────────────────
@@ -272,6 +273,7 @@ function handleEvent({ event, context, payload }) {
             refreshing.delete(context);
             flashing.delete(context);
             lastPossession.delete(context);
+            gameFinalAt.delete(context);
             if (refreshTimers.has(context)) {
                 clearTimeout(refreshTimers.get(context));
                 refreshTimers.delete(context);
@@ -289,7 +291,7 @@ function handleEvent({ event, context, payload }) {
             const game = currentGame.get(context);
             if (game && game.link) {
                 const cfg = instances.get(context) || {};
-                const url = buildGameUrl(game, cfg.linkType, cfg.customUrl);
+                const url = buildGameUrl(game, cfg.linkType, cfg.customUrl, gameFinalAt.get(context));
                 log('keyUp — opening URL:', url);
                 ws.send(JSON.stringify({ event: 'openUrl', payload: { url } }));
             } else {
@@ -341,6 +343,12 @@ function scheduleNextRefresh(context) {
     const delay = nextRefreshDelay(context);
     const timer = setTimeout(async () => {
         await refreshButton(context);
+        // Only re-arm if this key is still on screen and this timer is still
+        // the one it owns. A willDisappear (page/profile switch, key removed)
+        // or a fresh willAppear can land while the fetch above is in flight;
+        // re-arming unconditionally would leave an orphaned poller hitting
+        // ESPN every 30s for a key that no longer exists.
+        if (!instances.has(context) || refreshTimers.get(context) !== timer) return;
         scheduleNextRefresh(context);
     }, delay);
     refreshTimers.set(context, timer);
@@ -366,7 +374,9 @@ async function refreshButton(context) {
         // Detect live → final transition and play fireworks
         const prevGameState = prevState.get(context);
         prevState.set(context, game ? game.state : null);
+        if (!game || game.state !== 'final') gameFinalAt.delete(context);
         if (prevGameState === 'live' && game && game.state === 'final') {
+            gameFinalAt.set(context, Date.now()); // starts the Custom Link post-final grace window
             const winnerIsHome = game.homeScore >= game.awayScore;
             const winnerId     = winnerIsHome ? game.homeId : game.awayId;
             log('Game over — fireworks for', teamName(winnerId));
@@ -905,15 +915,39 @@ function fmtTime(iso, now) {
 // Resolves what pressing the button should open. Defaults to (and always
 // falls back to) ESPN Gamecast — the one link guaranteed to exist for a
 // preview, live, or final game. A configured custom link only takes over
-// once the game has actually started (live/final/delay): a regional
-// broadcast page or similar generally has nothing useful to show before
-// that, so sending the user there early would just be a dead end.
-function buildGameUrl(game, linkType, customUrl) {
+// once the game has actually started (live/delay/final), and hands back to
+// Gamecast 30 minutes after the final — the same grace window as the MLB,
+// MiLB, CFB, and NHL plugins. That matters more here than anywhere: an NFL
+// final stays on the key until Tuesday, and a broadcast page is a dead end
+// long before then.
+const CUSTOM_LINK_FINAL_GRACE_MS = 30 * 60 * 1000;
+// Tidies a user-typed Custom Link: trims whitespace and adds https:// when no
+// scheme was typed ("www.foxsports.com/live/sny" -> "https://www.foxsports.com/live/sny"),
+// since Stream Deck won't open a bare domain as a web page. Returns '' for
+// anything that can't be a web link (blank, or a non-http scheme like file:),
+// so callers fall back to the default link instead of opening nothing.
+function normalizeCustomUrl(raw) {
+    const s = String(raw || '').trim();
+    if (!s) return '';
+    if (/^https?:\/\//i.test(s)) return s;
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(s) || /^(javascript|data|file|vbscript|mailto):/i.test(s)) return '';
+    return 'https://' + s.replace(/^\/+/, '');
+}
+
+function buildGameUrl(game, linkType, customUrl, finalAt) {
+    customUrl = normalizeCustomUrl(customUrl);
     const gamecastUrl = game.link;
     if (linkType === 'custom' && customUrl) {
         const gameStarted = game.state === 'live' || game.state === 'final' || game.state === 'delay';
-        if (gameStarted) return customUrl;
-        log('Custom link requested but game has not started (state=' + game.state + ') — falling back to Gamecast');
+        if (!gameStarted) {
+            log('Custom link requested but game has not started (state=' + game.state + ') — falling back to Gamecast');
+            return gamecastUrl;
+        }
+        if (game.state === 'final' && (!finalAt || Date.now() - finalAt > CUSTOM_LINK_FINAL_GRACE_MS)) {
+            log('Custom link requested but game went final over 30 min ago — falling back to Gamecast');
+            return gamecastUrl;
+        }
+        return customUrl;
     }
     return gamecastUrl;
 }
