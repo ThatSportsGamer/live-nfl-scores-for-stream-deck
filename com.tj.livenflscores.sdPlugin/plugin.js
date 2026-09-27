@@ -465,7 +465,7 @@ function fitFs(text, maxFs) {
 // roster. fitFs() still runs as a per-game fallback for any unusually wide
 // abbreviation/score combination.
 function baseTierFs(abbr) {
-    return abbr.length >= 4 ? 16 : 17;
+    return abbr.length >= 4 ? 16 : 18; // 18 matches the score lines in the MLB/NHL/NBA plugins; fitFs() still shrinks anything that won't fit
 }
 
 // Real Helvetica-Bold glyph widths (per 1000 em units, from the standard AFM
