@@ -4,7 +4,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your keys. Each key tracks one team and updates automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.13-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.14-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
 
 ---
 
@@ -28,6 +28,10 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Each key 
 ---
 
 ## Recent Updates
+
+**v1.0.14.0**
+- Pregame key shows just the time on game day ("1:00 PM"); the weekday only appears for games later in the week
+- Score lines size up to 18pt to match the other plugins, stepping down only when a line is too wide
 
 **v1.0.13.0**
 - Custom Link now switches back to ESPN Gamecast 30 minutes after the final whistle — matches the MLB, MiLB, CFB, and NHL plugins (previously it stayed on your link until the next game)
