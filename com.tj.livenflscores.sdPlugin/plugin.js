@@ -907,6 +907,9 @@ function fmtTime(iso, now) {
         }
 
         const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        // Game day: just the time, same as every other plugin — the weekday
+        // only adds information when the game is on a later day this week.
+        if (now && d.toDateString() === now.toDateString()) return time;
         return day + ' ' + time;
     } catch (e) { return '?:??'; }
 }
