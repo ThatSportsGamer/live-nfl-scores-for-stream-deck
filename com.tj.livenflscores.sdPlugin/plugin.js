@@ -221,6 +221,7 @@ class SimpleWS extends events.EventEmitter {
 // ── Plugin state ──────────────────────────────────────────────────────────────
 const instances      = new Map(); // context -> { teamId, teamAbbr }
 const prevScores     = new Map(); // context -> { awayScore, homeScore }
+const lastTd         = new Map(); // context -> { side, period, clock, at } of a TD whose try hasn't come in yet
 const prevState      = new Map(); // context -> last known game state string
 const flashing        = new Set(); // contexts mid-flash animation
 const refreshing      = new Set(); // contexts mid-async refresh
@@ -267,6 +268,7 @@ function handleEvent({ event, context, payload }) {
         case 'willDisappear':
             instances.delete(context);
             prevScores.delete(context);
+            lastTd.delete(context);
             prevState.delete(context);
             lastRender.delete(context);
             currentGame.delete(context);
@@ -430,14 +432,29 @@ async function refreshButton(context) {
                     const color = (awayScored && homeScored) ? '#FFFFFF'
                         : awayScored ? teamColor(game.awayId)
                                      : teamColor(game.homeId);
-                    log('Score change — flashing', color);
+                    // Scoring card — one team only (both changing in one poll only
+                    // happens after missed polls, so that just flashes)
+                    let card = null, followUp = false;
+                    if (awayScored && homeScored) {
+                        lastTd.delete(context);
+                    } else {
+                        const side = awayScored ? 'away' : 'home';
+                        const d    = awayScored ? game.awayScore - prev.awayScore : game.homeScore - prev.homeScore;
+                        const play = scoringPlay(context, game, side, d);
+                        if (play) {
+                            card     = scoreCardLines(side === 'away' ? game.awayAbbr : game.homeAbbr, play.text);
+                            followUp = play.followUp;
+                        }
+                    }
+                    log('Score change —', followUp ? 'try card' : 'flashing ' + color, card ? JSON.stringify(card) : '');
                     refreshing.delete(context);
-                    flashButton(context, color, lines, spacing, resolveBgColor(cfg)).catch(e => log('flashButton error:', e.message));
+                    flashButton(context, color, lines, spacing, resolveBgColor(cfg), card, followUp).catch(e => log('flashButton error:', e.message));
                     return;
                 }
             }
         } else {
             prevScores.delete(context);
+            lastTd.delete(context);
         }
 
         setButton(context, lines, spacing, resolveBgColor(cfg));
@@ -1125,16 +1142,68 @@ function setButton(context, lines, lineSpacing, bgColor, force) {
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-async function flashButton(context, color, lines, spacing, restColor = 'black') {
+// ── Scoring card ──────────────────────────────────────────────────────────────
+// Works the play out from the score change alone (no extra request):
+//   +6/+7/+8 → "TD +n"   (+7/+8 = the try landed in the same poll)
+//   +1 / +2 by the team that just scored a TD, game clock unchanged since the TD
+//          → "XP +1" / "2PT +2" follow-up card (card only, no blinks). The clock
+//            stops after a TD and the try is untimed, so a moved clock means the
+//            kickoff happened and a later +2 is a safety, not the try.
+//   +2 by the other team, clock unchanged → defensive 2-point return ("2PT +2")
+//   +3 → "FG +3"     other +2 → "SAF +2"     other +1 → "XP +1" (follow-up)
+// Anything else (e.g. +9 after missed polls) just flashes.
+const SCORE_CARD_MS = 3000;
+const TRY_CARD_MS   = 2000;
+const TRY_WINDOW_MS = 10 * 60 * 1000; // safety net if the clock never moves
+
+function scoringPlay(context, game, side, d) {
+    const td = lastTd.get(context);
+    const sameStop = td && td.period === game.period && td.clock === game.clock &&
+                     Date.now() - td.at < TRY_WINDOW_MS;
+    lastTd.delete(context);
+    if (d === 6) {
+        lastTd.set(context, { side, period: game.period, clock: game.clock, at: Date.now() });
+        return { text: 'TD +6', followUp: false };
+    }
+    if (d === 7 || d === 8) return { text: 'TD +' + d, followUp: false };
+    if (d === 3)            return { text: 'FG +3', followUp: false };
+    if (d === 1)            return { text: 'XP +1', followUp: true };
+    if (d === 2) {
+        if (sameStop && td.side === side) return { text: '2PT +2', followUp: true };
+        if (sameStop)                     return { text: '2PT +2', followUp: false }; // defensive return
+        return { text: 'SAF +2', followUp: false };
+    }
+    return null;
+}
+
+// Team (white) over play + points (yellow, fixed 16pt — "2PT +2"/"SAF +2" are
+// the widest and fit). Team line is 24pt, shrinking only for 5+ letters.
+function scoreCardLines(abbr, text) {
+    if (!abbr || !text) return null;
+    const tfs = Math.min(24, Math.floor(64 / (abbr.length * 0.62)));
+    return [{ text: abbr, fs: tfs }, { text, fs: 16, color: '#FFD700' }];
+}
+
+// Score flash: 5 solid blinks of the color with no text (2.0 s), then the
+// scoring card for 3 s. A try (followUp) skips the blinks and shows its card
+// for 2 s. Then back to the score.
+async function flashButton(context, color, lines, spacing, restColor = 'black', card = null, followUp = false) {
     if (flashing.has(context)) return;
     flashing.add(context);
-    log('→ flash', color);
+    log('→ flash', color, card ? JSON.stringify(card) : '', followUp ? '(try)' : '');
     try {
-        for (let i = 0; i < 4; i++) {
-            setButton(context, lines, spacing, color, true);
-            await sleep(200);
-            setButton(context, lines, spacing, restColor, true);
-            await sleep(200);
+        if (!(followUp && card)) {
+            for (let i = 0; i < 5; i++) {
+                if (!instances.has(context)) return; // key was removed mid-flash
+                setButton(context, [''], spacing, color, true);
+                await sleep(200);
+                setButton(context, [''], spacing, restColor, true);
+                await sleep(200);
+            }
+        }
+        if (card && instances.has(context)) {
+            setButton(context, card, 1.3, 'black', true);
+            await sleep(followUp ? TRY_CARD_MS : SCORE_CARD_MS);
         }
     } finally {
         flashing.delete(context);

@@ -4,7 +4,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your keys. Each key tracks one team and updates automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.14-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.15-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
 
 ---
 
@@ -15,7 +15,7 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Each key 
 - **Two-minute warning** — the clock turns red during the final 2:00 of the 2nd and 4th quarters
 - **Pre-game** — shows the matchup (e.g. `DEN @ KC`) and scheduled kickoff day/time
 - **Final scores** — shows the final score with a "Final" label, including OT labeling for overtime games
-- **Score-change flash** — when a team scores, the key flashes in that team's primary color
+- **Score-change flash** — when a team scores, the key blinks in that team's primary color, then shows a short card with the team and the play (e.g. KC / TD +6, then XP +1 when the kick is good)
 - **End-of-game fireworks** — a short celebratory animation in the winning team's colors plays when the game ends
 - **Gamecast shortcut** — press any key to open that game directly in ESPN Gamecast
 - **Custom link** — optionally send key presses to a link of your choice (like a regional broadcast page) once the game has started, instead of Gamecast
@@ -28,6 +28,12 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Each key 
 ---
 
 ## Recent Updates
+
+**v1.0.15.0**
+- Score flash is now 5 solid blinks of the scoring team's color with no text, so it reads at a glance even on light team colors
+- New: right after the flash, a 3-second card shows the scoring team and the play — TD +6, FG +3, SAF +2 (TD +7 / TD +8 if the try lands in the same update)
+- New: when the extra point or two-point try comes in after a touchdown, a quick 2-second XP +1 / 2PT +2 card shows (no blinks)
+- Settings help text now says "key" instead of "button"
 
 **v1.0.14.0**
 - Pregame key shows just the time on game day ("1:00 PM"); the weekday only appears for games later in the week
