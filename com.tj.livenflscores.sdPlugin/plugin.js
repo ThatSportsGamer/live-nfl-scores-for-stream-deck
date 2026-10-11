@@ -401,7 +401,10 @@ function presentGame(context, game, cfg) {
         if (!game || game.state !== 'final') gameFinalAt.delete(context);
         if (prevGameState === 'live' && game && game.state === 'final') {
             gameFinalAt.set(context, Date.now()); // starts the Custom Link post-final grace window
-            const winnerIsHome = game.homeScore >= game.awayScore;
+        }
+        // Fireworks for the winner — skipped on a tie (nobody won).
+        if (prevGameState === 'live' && game && game.state === 'final' && game.homeScore !== game.awayScore) {
+            const winnerIsHome = game.homeScore > game.awayScore;
             const winnerId     = winnerIsHome ? game.homeId : game.awayId;
             log('Game over — fireworks for', teamName(winnerId));
             refreshing.delete(context);
@@ -900,7 +903,10 @@ function parseEvent(e, now) {
     if (/DELAY/.test(name))                                    return { ...base, state: 'delay' };
 
     if (state === 'pre') {
-        return { ...base, state: 'preview', time: fmtTime(e.date, now) };
+        // Flexed / unscheduled games (late season) carry a placeholder time
+        // until the league sets it — ESPN marks those timeValid: false.
+        const tbd = comp.timeValid === false || /\bTBD\b/i.test(type.shortDetail || type.detail || '');
+        return { ...base, state: 'preview', time: tbd ? 'TBD' : fmtTime(e.date, now) };
     }
 
     const awayScore = parseInt(away?.score, 10) || 0;
@@ -1257,7 +1263,6 @@ let   boardDebounce     = null;
 let   boardSortOrder    = 'column';  // 'column' = top→bottom, left→right | 'row'
 let   boardFinalsLast   = false;
 let   boardGames        = [];
-let   boardWeekCache    = null, boardWeekCacheTime = 0;
 const BOARD_CFG         = { teamAbbr: '' };
 
 function applyBoardSettings(settings) {
@@ -1330,12 +1335,30 @@ function sortBoardKeys(contexts) {
     });
 }
 
-async function fetchBoardWeek() {
-    if (boardWeekCache && Date.now() - boardWeekCacheTime < 10_000) return boardWeekCache;
-    const data = await fetchJson(SCOREBOARD_URL); // bare = ESPN's current week
-    boardWeekCache = data; boardWeekCacheTime = Date.now();
-    return data;
+// Which week the board shows: the earliest week whose hold hasn't expired —
+// a week holds until the Tuesday 3:00 AM ET after its last game (same rule
+// team keys use for finals), so Monday night's final stays up overnight and
+// the board flips to next week's matchups Tuesday morning, whenever ESPN
+// itself moves on.
+function boardWeekEvents(allEvents) {
+    const seen = new Set(), weeks = new Map();
+    for (const e of allEvents) {
+        if (!e || !e.id || seen.has(e.id) || !e.competitions || !e.competitions[0] || !e.competitions[0].competitors) continue;
+        seen.add(e.id);
+        const key = (e.season && e.season.type) + '-' + (e.week && e.week.number);
+        if (!weeks.has(key)) weeks.set(key, []);
+        weeks.get(key).push(e);
+    }
+    const list = [...weeks.values()].map(evs => {
+        evs.sort((a, b) => new Date(a.date) - new Date(b.date));
+        return { evs, first: new Date(evs[0].date).getTime(), last: new Date(evs[evs.length - 1].date).getTime() };
+    }).sort((a, b) => a.first - b.first);
+    if (!list.length) return [];
+    const nowMs = Date.now();
+    const pick = list.find(w => nowMs < nextTuesday3amAfter(w.last)) || list[list.length - 1];
+    return pick.evs;
 }
+
 
 // 15s while any game is inside a two-minute warning, else 30s (same rule as team keys).
 function boardDelay() {
@@ -1359,10 +1382,9 @@ async function refreshBoard() {
     if (boardRefreshing) return;
     boardRefreshing = true;
     try {
-        const data = await fetchBoardWeek();
+        const data = await fetchWeekWindow(); // last / this / next week, shared with team keys
         const now  = new Date();
-        const events = (data.events || []).filter(e => e && e.competitions && e.competitions[0] && e.competitions[0].competitors);
-        events.sort((a, b) => new Date(a.date) - new Date(b.date));
+        const events = boardWeekEvents(data.events || []);
         let games = events.map(e => { try { return parseEvent(e, now); } catch (err) { log('board parse error:', err.message); return null; } }).filter(Boolean);
         if (boardFinalsLast) games = [...games.filter(g => g.state !== 'final'), ...games.filter(g => g.state === 'final')];
         boardGames = games;
