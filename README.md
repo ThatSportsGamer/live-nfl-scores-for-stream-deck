@@ -17,7 +17,7 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 - **Final scores** — shows the final score with a "Final" label, including OT labeling for overtime games
 - **Score-change flash** — when a team scores, the key blinks in that team's primary color, then shows a short card with the team and the play (e.g. KC / TD +6, then XP +1 when the kick is good)
 - **End-of-game fireworks** — a short celebratory animation in the winning team's colors plays when the game ends (skipped on a tie)
-- **Gamecast shortcut** — press any key to open that game directly in ESPN Gamecast
+- **Gamecast shortcut** — press any key to open that game directly in ESPN Gamecast (the box score once the game is final)
 - **Custom link** — optionally send key presses to a link of your choice (like a regional broadcast page) once the game has started, instead of Gamecast
 - **Bye-week shortcut** — if your team has no game scheduled, pressing the key opens that team's full schedule on ESPN instead
 - **No-flicker updates** — keys only redraw when the display actually changes
@@ -32,9 +32,10 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 
 **v1.1.0.0**
 - New: **Live NFL Scoreboard** action — drag it onto as many keys as you like and they fill with this week's games (Thursday through Monday) in kickoff order, one game per key. Same keys as the team action: possession and red zone, score flash with TD/XP/FG/SAF/2PT cards, fireworks at the final. Fill top-to-bottom or left-to-right, optionally send finals to the end, and the last key shows "+N more" if the week has more games than keys. Each Stream Deck gets its own board
-- Press a Scoreboard key to open that game in ESPN Gamecast; the "+N more" key opens ESPN's full NFL scoreboard
+- Press a Scoreboard key to open that game in ESPN Gamecast (the box score once it's final); the "+N more" key opens ESPN's full NFL scoreboard
 - Keys past the number of games this week show "No Game" (matches Live MLB Scoreboard); pressing one refreshes the board and opens ESPN's full NFL scoreboard
 - 16 keys recommended: fits every game in any week
+- Final games now open ESPN's box score instead of Gamecast, on both actions
 - The board holds the week through Monday night and flips to next week at Tuesday 3:00 AM ET, the same rule the team keys use
 - Pregame keys show "TBD" when the NFL hasn't set the kickoff time yet (e.g. Week 18 flex games), on both actions
 - No fireworks when a game ends in a tie, on both actions

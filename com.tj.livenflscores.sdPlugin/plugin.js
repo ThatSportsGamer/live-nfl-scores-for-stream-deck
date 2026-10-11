@@ -914,7 +914,9 @@ function parseEvent(e, now) {
     const period     = status.period || type.period || 1;
 
     if (state === 'post') {
-        return { ...base, state: 'final', awayScore, homeScore, period };
+        // Finished games open ESPN's box score instead of Gamecast
+        const boxLink = 'https://www.espn.com/nfl/boxscore/_/gameId/' + e.id;
+        return { ...base, link: boxLink, state: 'final', awayScore, homeScore, period };
     }
 
     // Live — pull down/distance/possession info defensively; ESPN omits `situation`
