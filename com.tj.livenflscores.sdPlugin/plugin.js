@@ -831,16 +831,12 @@ function parseGames(data, teamId, now) {
             return comp.competitors.some(c => String(c.team?.id) === String(teamId));
         });
         if (!matches.length) {
-            // Other teams have games in this window but this one doesn't — under
-            // normal weekly cadence that can't happen (the hold-until-Tuesday
-            // rule plus the 10-day-forward preview window always overlap for a
-            // team playing every ~7 days), so an empty `matches` alongside a
-            // non-empty `allEvents` specifically means this team has a bye.
-            // (The one known false positive: a team eliminated from the
-            // playoffs while others still play on — rare enough, and only
-            // relevant in January, to leave as a known limitation for now.)
-            log('API: no games found for team', teamId, '— treating as bye week');
-            return { state: 'bye' };
+            // Nothing for this team anywhere in last / this / next week — the
+            // season hasn't started or is over for them (e.g. knocked out of
+            // the playoffs while others play on). Real byes are handled below
+            // by isByeWeek(), which needs a game on both sides of the week.
+            log('API: no games found for team', teamId, '— No Game');
+            return null;
         }
 
         let best = null, bestRank = -1, bestTime = null;
@@ -863,6 +859,10 @@ function parseGames(data, teamId, now) {
         // 3am ET that follows it) and, if so, prefer it over an upcoming
         // preview regardless of the rank ordering above.
         if (bestRank !== 3) {
+            if (isByeWeek(allEvents, matches)) {
+                log('Bye week for team', teamId);
+                return { state: 'bye' };
+            }
             let recentFinal = null, recentFinalTime = -1;
             for (const e of matches) {
                 const comp  = e.competitions[0];
@@ -879,6 +879,24 @@ function parseGames(data, teamId, now) {
         log('parseGames error:', e.message);
         return null;
     }
+}
+
+// Bye week: "this week" — the earliest week whose hold hasn't expired, the
+// same week the Scoreboard shows — has no game for this team, but it played
+// earlier in the window and plays again later. So the key reads BYE WEEK from
+// the Tuesday 3:00 AM ET switchover after its last final until the switchover into the
+// week of its next game. Needing a game on both sides keeps opening week
+// (no game yet) and a finished season (no game left) from reading as a bye.
+function isByeWeek(allEvents, matches) {
+    const week = boardWeekEvents(allEvents);
+    if (!week.length) return false;
+    const ids = new Set(week.map(e => e.id));
+    if (matches.some(e => ids.has(e.id))) return false;
+    const first = new Date(week[0].date).getTime();
+    const last  = new Date(week[week.length - 1].date).getTime();
+    const before = matches.some(e => new Date(e.date).getTime() < first);
+    const after  = matches.some(e => new Date(e.date).getTime() > last);
+    return before && after;
 }
 
 function parseEvent(e, now) {

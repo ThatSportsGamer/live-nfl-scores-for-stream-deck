@@ -39,6 +39,8 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 - The board holds the week through Monday night and flips to next week at Tuesday 3:00 AM ET, the same rule the team keys use
 - Pregame keys show "TBD" when the NFL hasn't set the kickoff time yet (e.g. Week 18 flex games), on both actions
 - No fireworks when a game ends in a tie, on both actions
+- Bye weeks now show `BYE WEEK` for the whole off week (Tuesday 3:00 AM ET to Tuesday 3:00 AM ET). Before, the key jumped ahead to the next game a week early
+- A team whose season is over (e.g. knocked out of the playoffs while others play on) now shows `No Game` instead of `BYE WEEK`
 
 **v1.0.15.0**
 - Score flash is now 5 solid blinks of the scoring team's color with no text, so it reads at a glance even on light team colors
@@ -164,9 +166,9 @@ KC    24
  KC
 BYE WEEK
 ```
-Pressing the key in this state opens that team's schedule on ESPN.
+Shown for the whole off week: from the Tuesday 3:00 AM ET after the team's last game until the Tuesday 3:00 AM ET that starts the week of its next game. Pressing the key in this state opens that team's schedule on ESPN.
 
-**No game found at all** (e.g. deep off-season):
+**No game found at all** (e.g. deep off-season, or after your team's season ends):
 ```
  KC
 No Game
