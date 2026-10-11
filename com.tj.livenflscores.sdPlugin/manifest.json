@@ -43,7 +43,7 @@
             "SupportedInMultiActions": false
         },
         {
-            "Name": "NFL Scoreboard",
+            "Name": "Live NFL Scoreboard",
             "UUID": "com.tj.livenflscores.scoreboard",
             "Icon": "imgs/scoreboard-icon",
             "Tooltip": "Fills your keys with this week's NFL games, one game per key, in kickoff order.",
