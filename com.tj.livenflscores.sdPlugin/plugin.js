@@ -1320,8 +1320,10 @@ function handleBoardEvent({ event, context, payload, device }) {
                 break;
             }
             const game = boardSlotGame.get(context);
-            if (game && game.link) ws.send(JSON.stringify({ event: 'openUrl', payload: { url: game.link } }));
-            else refreshBoard();
+            if (game && game.link) { ws.send(JSON.stringify({ event: 'openUrl', payload: { url: game.link } })); break; }
+            // "No Game" key: refresh the board and open ESPN's full scoreboard
+            refreshBoard();
+            ws.send(JSON.stringify({ event: 'openUrl', payload: { url: BOARD_URL_MORE } }));
             break;
         }
     }

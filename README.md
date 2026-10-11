@@ -33,7 +33,8 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 **v1.1.0.0**
 - New: **Live NFL Scoreboard** action — drag it onto as many keys as you like and they fill with this week's games (Thursday through Monday) in kickoff order, one game per key. Same keys as the team action: possession and red zone, score flash with TD/XP/FG/SAF/2PT cards, fireworks at the final. Fill top-to-bottom or left-to-right, optionally send finals to the end, and the last key shows "+N more" if the week has more games than keys. Each Stream Deck gets its own board
 - Press a Scoreboard key to open that game in ESPN Gamecast; the "+N more" key opens ESPN's full NFL scoreboard
-- Keys past the number of games this week show "No Game" (matches Live MLB Scoreboard)
+- Keys past the number of games this week show "No Game" (matches Live MLB Scoreboard); pressing one refreshes the board and opens ESPN's full NFL scoreboard
+- 16 keys recommended: fits every game in any week
 - The board holds the week through Monday night and flips to next week at Tuesday 3:00 AM ET, the same rule the team keys use
 - Pregame keys show "TBD" when the NFL hasn't set the kickoff time yet (e.g. Week 18 flex games), on both actions
 - No fireworks when a game ends in a tie, on both actions
@@ -127,7 +128,7 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 
 **Scoreboard:**
 
-1. Drag the **Live NFL Scoreboard** action onto as many keys as you want (a full page works great)
+1. Drag the **Live NFL Scoreboard** action onto as many keys as you want. **16 keys is recommended**: that fits every game in any week (16 games when all 32 teams play)
 2. Optionally, open the settings panel on any Scoreboard key to fill top-to-bottom or left-to-right, or to move finished games to the end. The setting applies to every Scoreboard key
 
 ---
@@ -180,7 +181,7 @@ Same key behavior as a bye — pressing it opens the team's schedule on ESPN.
 Each **Live NFL Scoreboard** key is one game from this week, in kickoff order (Thursday through Monday). The keys look and act just like the team keys above: possession and red zone colors, two-minute warning, the score flash and play card, and fireworks at the final.
 
 - **More games than keys:** the last key shows `+N more`; pressing it opens ESPN's full NFL scoreboard
-- **More keys than games:** the extra keys show `No Game`
+- **More keys than games:** the extra keys show `No Game`; pressing one refreshes the board and opens ESPN's full NFL scoreboard
 - **Fill order:** top-to-bottom (default) or left-to-right, set in the settings panel
 - **Finals last:** optionally move finished games to the end so live and upcoming games stay up front
 - **Week change:** the board keeps this week up until Tuesday 3:00 AM ET, then moves to next week
