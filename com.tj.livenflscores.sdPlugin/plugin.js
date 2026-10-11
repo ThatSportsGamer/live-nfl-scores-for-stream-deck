@@ -1150,7 +1150,10 @@ async function playFireworks(context, winnerName, winnerColor) {
     } finally {
         flashing.delete(context);
         lastRender.delete(context);
-        refreshButton(context);
+        // A Scoreboard key redraws its slot; a team key refetches its game.
+        // (refreshButton on a Scoreboard key would show "Select A Team".)
+        if (boardKeys.has(context)) renderBoardKey(context, boardSlotGame.get(context) || null);
+        else refreshButton(context);
     }
 }
 
