@@ -2,9 +2,9 @@
 
 ![Live NFL Scores in action](assets/LiveNFLScoresThumbnail.png)
 
-A Stream Deck plugin that shows live NFL scores directly on your keys. Each key tracks one team and updates automatically every 30 seconds.
+A Stream Deck plugin that shows live NFL scores directly on your keys. Two actions: **Live NFL Scores** tracks one team per key, and **NFL Scoreboard** fills your keys with the whole week's games. Keys update automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.0.15-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.1.0-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
 
 ---
 
@@ -23,11 +23,16 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Each key 
 - **No-flicker updates** — keys only redraw when the display actually changes
 - **Multi-key support** — add as many team keys as you want, each refreshes independently
 - **Custom background color** — set a per-key background color and opacity in the settings panel, handy for telling teams apart at a glance across multiple keys
+- **NFL Scoreboard action** — a second action that lays out the whole week: each key is one game, in kickoff order (Thursday through Monday), with "+N more" on the last key if you run out of keys. Each Stream Deck gets its own board
 - **All 32 NFL teams** across all 8 divisions (AFC East, North, South, West and NFC East, North, South, West)
 
 ---
 
 ## Recent Updates
+
+**v1.1.0.0**
+- New: **NFL Scoreboard** action — drag it onto as many keys as you like and they fill with this week's games (Thursday through Monday) in kickoff order, one game per key. Same keys as the team action: possession and red zone, score flash with TD/XP/FG/SAF/2PT cards, fireworks at the final. Fill top-to-bottom or left-to-right, optionally send finals to the end, and the last key shows "+N more" if the week has more games than keys. Each Stream Deck gets its own board
+- Press a Scoreboard key to open that game in ESPN Gamecast
 
 **v1.0.15.0**
 - Score flash is now 5 solid blinks of the scoring team's color with no text, so it reads at a glance even on light team colors

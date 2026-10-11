@@ -254,7 +254,11 @@ ws.on('close', ()  => {
 });
 
 // ── Stream Deck event handler ─────────────────────────────────────────────────
-function handleEvent({ event, context, payload }) {
+function handleEvent(ev) {
+    const { event, context, payload } = ev;
+    // Scoreboard keys are a separate action with their own handler (see the
+    // Scoreboard section at the bottom of this file).
+    if (ev.action === BOARD_ACTION || (context && boardKeys.has(context))) { handleBoardEvent(ev); return; }
     switch (event) {
 
         case 'willAppear':
@@ -371,11 +375,29 @@ async function refreshButton(context) {
     log('Refreshing', cfg.teamAbbr || cfg.teamId, '— bg:', JSON.stringify(resolveBgColor(cfg)));
     try {
         const game = await fetchTeamGame(cfg.teamId);
+        presentGame(context, game, cfg);
+    } catch (err) {
+        log('Fetch error:', err.message);
+        setButton(context, [cfg.teamAbbr || 'NFL', 'Err'], undefined, resolveBgColor(cfg));
+    } finally {
+        refreshing.delete(context);
+    }
+}
+
+// Draws one key for one game: fireworks on live → final, the possession
+// hold-over, the score flash + scoring card, or the plain score. Shared by
+// team keys (refreshButton) and Scoreboard keys (renderBoardKey). Per-key
+// memory is matched by eventId, so a Scoreboard key whose slot moves to a
+// different game never compares one game's score against another's.
+function presentGame(context, game, cfg) {
+    {
         currentGame.set(context, game || null);
+        const gid = game ? game.eventId : null;
 
         // Detect live → final transition and play fireworks
-        const prevGameState = prevState.get(context);
-        prevState.set(context, game ? game.state : null);
+        const prevGame      = prevState.get(context);
+        const prevGameState = prevGame && prevGame.eventId === gid ? prevGame.state : null;
+        prevState.set(context, game ? { eventId: gid, state: game.state } : null);
         if (!game || game.state !== 'final') gameFinalAt.delete(context);
         if (prevGameState === 'live' && game && game.state === 'final') {
             gameFinalAt.set(context, Date.now()); // starts the Custom Link post-final grace window
@@ -422,9 +444,11 @@ async function refreshButton(context) {
         log('→', JSON.stringify(lines));
 
         // Detect score change on live games and flash in the scoring team's color
-        const prev = prevScores.get(context);
+        const prevRaw = prevScores.get(context);
+        const prev    = prevRaw && prevRaw.eventId === gid ? prevRaw : null;
+        if (prevRaw && !prev) lastTd.delete(context); // slot moved to a different game
         if (game && game.state === 'live') {
-            prevScores.set(context, { awayScore: game.awayScore, homeScore: game.homeScore });
+            prevScores.set(context, { eventId: gid, awayScore: game.awayScore, homeScore: game.homeScore });
             if (prev) {
                 const awayScored = game.awayScore > prev.awayScore;
                 const homeScored = game.homeScore > prev.homeScore;
@@ -458,11 +482,6 @@ async function refreshButton(context) {
         }
 
         setButton(context, lines, spacing, resolveBgColor(cfg));
-    } catch (err) {
-        log('Fetch error:', err.message);
-        setButton(context, [cfg.teamAbbr || 'NFL', 'Err'], undefined, resolveBgColor(cfg));
-    } finally {
-        refreshing.delete(context);
     }
 }
 
@@ -1140,6 +1159,9 @@ function setButton(context, lines, lineSpacing, bgColor, force) {
     ws.send(JSON.stringify({ event: 'setImage', context, payload: { image: makeImage(lines, lineSpacing, bg.fill, bg.opacity), target: 0 } }));
 }
 
+// A key still on screen — team key or Scoreboard key.
+function keyAlive(context) { return instances.has(context) || boardKeys.has(context); }
+
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
 // ── Scoring card ──────────────────────────────────────────────────────────────
@@ -1194,14 +1216,14 @@ async function flashButton(context, color, lines, spacing, restColor = 'black', 
     try {
         if (!(followUp && card)) {
             for (let i = 0; i < 5; i++) {
-                if (!instances.has(context)) return; // key was removed mid-flash
+                if (!keyAlive(context)) return; // key was removed mid-flash
                 setButton(context, [''], spacing, color, true);
                 await sleep(200);
                 setButton(context, [''], spacing, restColor, true);
                 await sleep(200);
             }
         }
-        if (card && instances.has(context)) {
+        if (card && keyAlive(context)) {
             setButton(context, card, 1.3, 'black', true);
             await sleep(followUp ? TRY_CARD_MS : SCORE_CARD_MS);
         }
@@ -1209,4 +1231,174 @@ async function flashButton(context, color, lines, spacing, restColor = 'black', 
         flashing.delete(context);
         setButton(context, lines, spacing, restColor, true);
     }
+}
+
+
+// ══ Scoreboard action ═════════════════════════════════════════════════════════
+// A second action in this plugin: every key you drag on becomes one slot of a
+// board showing the current NFL week's games (ESPN's own "current week" —
+// Thursday through Monday), in kickoff order. Same keys as the team action —
+// possession, red zone, score flash + TD/XP/FG/SAF/2PT cards, fireworks —
+// just fed from one shared fetch instead of one team.
+//  • Each Stream Deck (physical, Virtual, Mobile) gets its own board from game 1.
+//  • Only the visible page's keys exist, so leaving a page and coming back
+//    just shows current scores (per-key memory is cleared on willDisappear).
+//  • More games than keys → the last key shows "+N more" (opens ESPN's
+//    scoreboard). Empty slots stay blank.
+//  • Settings (fill order, finals last) are shared by every Scoreboard key.
+const BOARD_ACTION      = 'com.tj.livenflscores.scoreboard';
+const BOARD_URL_MORE    = 'https://www.espn.com/nfl/scoreboard';
+const boardKeys         = new Map(); // context -> { device, coords }
+const boardSlotGame     = new Map(); // context -> game currently in that slot
+let   boardOverflow     = new Set(); // contexts acting as "+N more"
+let   boardTimer        = null;
+let   boardRefreshing   = false;
+let   boardDebounce     = null;
+let   boardSortOrder    = 'column';  // 'column' = top→bottom, left→right | 'row'
+let   boardFinalsLast   = false;
+let   boardGames        = [];
+let   boardWeekCache    = null, boardWeekCacheTime = 0;
+const BOARD_CFG         = { teamAbbr: '' };
+
+function applyBoardSettings(settings) {
+    if (!settings) return;
+    if (settings.sortOrder) boardSortOrder = settings.sortOrder === 'row' ? 'row' : 'column';
+    if (settings.finalsLast !== undefined) boardFinalsLast = !!settings.finalsLast;
+}
+
+function boardSettings() { return { sortOrder: boardSortOrder, finalsLast: boardFinalsLast }; }
+
+function clearKeyMemory(context) {
+    prevScores.delete(context); lastTd.delete(context); prevState.delete(context);
+    lastRender.delete(context); currentGame.delete(context); flashing.delete(context);
+    lastPossession.delete(context); gameFinalAt.delete(context); boardSlotGame.delete(context);
+}
+
+function handleBoardEvent({ event, context, payload, device }) {
+    switch (event) {
+        case 'willAppear': {
+            const settings = (payload && payload.settings) || {};
+            const coords   = (payload && payload.coordinates) || { row: 0, column: 0 };
+            boardKeys.set(context, { device: device || '__unknown__', coords });
+            applyBoardSettings(settings);
+            if (!settings.sortOrder || settings.finalsLast === undefined) {
+                ws.send(JSON.stringify({ event: 'setSettings', context, payload: boardSettings() }));
+            }
+            log('Scoreboard willAppear row=' + coords.row + ' col=' + coords.column + ' keys=' + boardKeys.size);
+            if (boardDebounce) clearTimeout(boardDebounce);
+            boardDebounce = setTimeout(() => { boardDebounce = null; refreshBoard(); }, 300);
+            break;
+        }
+        case 'willDisappear':
+            boardKeys.delete(context);
+            boardOverflow.delete(context);
+            clearKeyMemory(context);
+            if (boardKeys.size === 0 && boardTimer) { clearTimeout(boardTimer); boardTimer = null; log('Scoreboard: no keys — timer stopped'); }
+            break;
+        case 'didReceiveSettings':
+        case 'sendToPlugin': {
+            const settings = payload && payload.settings;
+            if (!settings) break;
+            applyBoardSettings(settings);
+            // Keep every Scoreboard key's saved settings in step, so whichever
+            // key appears first after a restart carries the current choice.
+            for (const ctx of boardKeys.keys()) {
+                if (ctx !== context) ws.send(JSON.stringify({ event: 'setSettings', context: ctx, payload: boardSettings() }));
+            }
+            for (const ctx of boardKeys.keys()) lastRender.delete(ctx);
+            refreshBoard();
+            break;
+        }
+        case 'keyUp': {
+            if (boardOverflow.has(context)) {
+                ws.send(JSON.stringify({ event: 'openUrl', payload: { url: BOARD_URL_MORE } }));
+                break;
+            }
+            const game = boardSlotGame.get(context);
+            if (game && game.link) ws.send(JSON.stringify({ event: 'openUrl', payload: { url: game.link } }));
+            else refreshBoard();
+            break;
+        }
+    }
+}
+
+function sortBoardKeys(contexts) {
+    return contexts.sort((a, b) => {
+        const ca = boardKeys.get(a).coords, cb = boardKeys.get(b).coords;
+        if (boardSortOrder === 'row') return (ca.row - cb.row) || (ca.column - cb.column);
+        return (ca.column - cb.column) || (ca.row - cb.row);
+    });
+}
+
+async function fetchBoardWeek() {
+    if (boardWeekCache && Date.now() - boardWeekCacheTime < 10_000) return boardWeekCache;
+    const data = await fetchJson(SCOREBOARD_URL); // bare = ESPN's current week
+    boardWeekCache = data; boardWeekCacheTime = Date.now();
+    return data;
+}
+
+// 15s while any game is inside a two-minute warning, else 30s (same rule as team keys).
+function boardDelay() {
+    for (const g of boardGames) {
+        if (g && g.state === 'live' && (g.period === 2 || g.period === 4)) {
+            const s = parseClockSeconds(g.clock);
+            if (s !== null && s <= 120) return 15_000;
+        }
+    }
+    return 30_000;
+}
+
+function scheduleBoard() {
+    if (boardTimer) clearTimeout(boardTimer);
+    if (boardKeys.size === 0) { boardTimer = null; return; }
+    boardTimer = setTimeout(async () => { await refreshBoard(); }, boardDelay());
+}
+
+async function refreshBoard() {
+    if (boardKeys.size === 0) return;
+    if (boardRefreshing) return;
+    boardRefreshing = true;
+    try {
+        const data = await fetchBoardWeek();
+        const now  = new Date();
+        const events = (data.events || []).filter(e => e && e.competitions && e.competitions[0] && e.competitions[0].competitors);
+        events.sort((a, b) => new Date(a.date) - new Date(b.date));
+        let games = events.map(e => { try { return parseEvent(e, now); } catch (err) { log('board parse error:', err.message); return null; } }).filter(Boolean);
+        if (boardFinalsLast) games = [...games.filter(g => g.state !== 'final'), ...games.filter(g => g.state === 'final')];
+        boardGames = games;
+        log('Scoreboard: ' + games.length + ' games, ' + boardKeys.size + ' keys');
+
+        const devices = [...new Set([...boardKeys.values()].map(k => k.device))];
+        const overflow = new Set();
+        for (const dev of devices) {
+            const sorted   = sortBoardKeys([...boardKeys.keys()].filter(c => boardKeys.get(c).device === dev));
+            const over     = games.length > sorted.length;
+            const slots    = over ? sorted.length - 1 : sorted.length;
+            for (let i = 0; i < slots; i++) renderBoardKey(sorted[i], games[i] || null);
+            if (over) {
+                const ctx = sorted[sorted.length - 1];
+                overflow.add(ctx);
+                clearKeyMemory(ctx);
+                setButton(ctx, [{ text: '+' + (games.length - slots), fs: 22, color: '#FFD700' }, { text: 'more', fs: 13, color: '#999999' }], 1.3);
+            }
+        }
+        boardOverflow = overflow;
+    } catch (err) {
+        log('Scoreboard error:', err.message);
+        for (const ctx of boardKeys.keys()) if (!flashing.has(ctx)) setButton(ctx, ['NFL', 'Err']);
+    } finally {
+        boardRefreshing = false;
+        scheduleBoard();
+    }
+}
+
+function renderBoardKey(context, game) {
+    if (flashing.has(context)) return;
+    boardSlotGame.set(context, game);
+    if (!game) {
+        prevScores.delete(context); lastTd.delete(context); prevState.delete(context);
+        setButton(context, ['']);
+        return;
+    }
+    presentGame(context, game, BOARD_CFG);
 }
