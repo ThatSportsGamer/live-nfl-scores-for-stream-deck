@@ -1250,7 +1250,7 @@ async function flashButton(context, color, lines, spacing, restColor = 'black', 
 //  • Only the visible page's keys exist, so leaving a page and coming back
 //    just shows current scores (per-key memory is cleared on willDisappear).
 //  • More games than keys → the last key shows "+N more" (opens ESPN's
-//    scoreboard). Empty slots stay blank.
+//    scoreboard). Empty slots show "No Game" (like Live MLB Scoreboard).
 //  • Settings (fill order, finals last) are shared by every Scoreboard key.
 const BOARD_ACTION      = 'com.tj.livenflscores.scoreboard';
 const BOARD_URL_MORE    = 'https://www.espn.com/nfl/scoreboard';
@@ -1419,7 +1419,7 @@ function renderBoardKey(context, game) {
     boardSlotGame.set(context, game);
     if (!game) {
         prevScores.delete(context); lastTd.delete(context); prevState.delete(context);
-        setButton(context, ['']);
+        setButton(context, ['No', 'Game']);   // matches Live MLB Scoreboard
         return;
     }
     presentGame(context, game, BOARD_CFG);

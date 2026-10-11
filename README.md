@@ -13,17 +13,17 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 - **Live scores** — shows away score, home score, quarter, and game clock while a game is in progress
 - **Possession indicator** — the team with the ball is shown in brown, turning orange if they're in the red zone
 - **Two-minute warning** — the clock turns red during the final 2:00 of the 2nd and 4th quarters
-- **Pre-game** — shows the matchup (e.g. `DEN @ KC`) and scheduled kickoff day/time
+- **Pre-game** — shows the matchup (e.g. `DEN @ KC`) and scheduled kickoff day/time ("TBD" until the NFL sets it, e.g. Week 18 flex games)
 - **Final scores** — shows the final score with a "Final" label, including OT labeling for overtime games
 - **Score-change flash** — when a team scores, the key blinks in that team's primary color, then shows a short card with the team and the play (e.g. KC / TD +6, then XP +1 when the kick is good)
-- **End-of-game fireworks** — a short celebratory animation in the winning team's colors plays when the game ends
+- **End-of-game fireworks** — a short celebratory animation in the winning team's colors plays when the game ends (skipped on a tie)
 - **Gamecast shortcut** — press any key to open that game directly in ESPN Gamecast
 - **Custom link** — optionally send key presses to a link of your choice (like a regional broadcast page) once the game has started, instead of Gamecast
 - **Bye-week shortcut** — if your team has no game scheduled, pressing the key opens that team's full schedule on ESPN instead
 - **No-flicker updates** — keys only redraw when the display actually changes
 - **Multi-key support** — add as many team keys as you want, each refreshes independently
 - **Custom background color** — set a per-key background color and opacity in the settings panel, handy for telling teams apart at a glance across multiple keys
-- **Live NFL Scoreboard action** — a second action that lays out the whole week: each key is one game, in kickoff order (Thursday through Monday), with "+N more" on the last key if you run out of keys. Each Stream Deck gets its own board
+- **Live NFL Scoreboard action** — a second action that lays out the whole week: each key is one game, in kickoff order (Thursday through Monday), with "+N more" on the last key if you run out of keys and "No Game" on any extra keys. The week stays up until Tuesday 3:00 AM ET, same as the team keys. Each Stream Deck gets its own board
 - **All 32 NFL teams** across all 8 divisions (AFC East, North, South, West and NFC East, North, South, West)
 
 ---
@@ -32,7 +32,11 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 
 **v1.1.0.0**
 - New: **Live NFL Scoreboard** action — drag it onto as many keys as you like and they fill with this week's games (Thursday through Monday) in kickoff order, one game per key. Same keys as the team action: possession and red zone, score flash with TD/XP/FG/SAF/2PT cards, fireworks at the final. Fill top-to-bottom or left-to-right, optionally send finals to the end, and the last key shows "+N more" if the week has more games than keys. Each Stream Deck gets its own board
-- Press a Scoreboard key to open that game in ESPN Gamecast
+- Press a Scoreboard key to open that game in ESPN Gamecast; the "+N more" key opens ESPN's full NFL scoreboard
+- Keys past the number of games this week show "No Game" (matches Live MLB Scoreboard)
+- The board holds the week through Monday night and flips to next week at Tuesday 3:00 AM ET, the same rule the team keys use
+- Pregame keys show "TBD" when the NFL hasn't set the kickoff time yet (e.g. Week 18 flex games), on both actions
+- No fireworks when a game ends in a tie, on both actions
 
 **v1.0.15.0**
 - Score flash is now 5 solid blinks of the scoring team's color with no text, so it reads at a glance even on light team colors
@@ -121,6 +125,11 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 2. In the settings panel on the right, find your team by typing into the search box or by picking a division and then a team from the dropdowns
 3. That's it — the key will load your team's current or upcoming game within a few seconds and refresh every 30 seconds from there
 
+**Scoreboard:**
+
+1. Drag the **Live NFL Scoreboard** action onto as many keys as you want (a full page works great)
+2. Optionally, open the settings panel on any Scoreboard key to fill top-to-bottom or left-to-right, or to move finished games to the end. The setting applies to every Scoreboard key
+
 ---
 
 ## What the Key Shows
@@ -161,6 +170,21 @@ Pressing the key in this state opens that team's schedule on ESPN.
 No Game
 ```
 Same key behavior as a bye — pressing it opens the team's schedule on ESPN.
+
+---
+
+## The Scoreboard
+
+![Live NFL Scoreboard showing a Sunday slate](assets/LiveNFLScoreboardInAction.png)
+
+Each **Live NFL Scoreboard** key is one game from this week, in kickoff order (Thursday through Monday). The keys look and act just like the team keys above: possession and red zone colors, two-minute warning, the score flash and play card, and fireworks at the final.
+
+- **More games than keys:** the last key shows `+N more`; pressing it opens ESPN's full NFL scoreboard
+- **More keys than games:** the extra keys show `No Game`
+- **Fill order:** top-to-bottom (default) or left-to-right, set in the settings panel
+- **Finals last:** optionally move finished games to the end so live and upcoming games stay up front
+- **Week change:** the board keeps this week up until Tuesday 3:00 AM ET, then moves to next week
+- **Multiple Stream Decks:** each deck (including a Virtual Stream Deck or Stream Deck Mobile) gets its own board
 
 ---
 
