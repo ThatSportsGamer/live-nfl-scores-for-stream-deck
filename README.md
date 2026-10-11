@@ -41,6 +41,7 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 - No fireworks when a game ends in a tie, on both actions
 - Bye weeks now show `BYE WEEK` for the whole off week (Tuesday 3:00 AM ET to Tuesday 3:00 AM ET). Before, the key jumped ahead to the next game a week early
 - A team whose season is over (e.g. knocked out of the playoffs while others play on) now shows `No Game` instead of `BYE WEEK`
+- Neutral-site games (London and other international games, the Super Bowl) show `PHI vs JAX` instead of `PHI @ JAX`, on both actions
 
 **v1.0.15.0**
 - Score flash is now 5 solid blinks of the scoring team's color with no text, so it reads at a glance even on light team colors

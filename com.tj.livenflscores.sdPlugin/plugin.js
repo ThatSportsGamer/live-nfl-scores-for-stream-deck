@@ -910,7 +910,9 @@ function parseEvent(e, now) {
     const home = comp.competitors.find(c => c.homeAway === 'home');
     const awayId = away?.team?.id, homeId = home?.team?.id;
     const awayAbbr = teamAbbr(awayId), homeAbbr = teamAbbr(homeId);
-    const matchup  = awayAbbr + ' @ ' + homeAbbr;
+    // Neutral-site games (London, Super Bowl, ...) read "PHI vs JAX" instead of "@"
+    const sep      = comp.neutralSite ? ' vs ' : ' @ ';
+    const matchup  = awayAbbr + sep + homeAbbr;
 
     const gcLink = (e.links || []).find(l => (l.text || '').toLowerCase() === 'gamecast') || (e.links || [])[0];
     const link   = gcLink?.href || ('https://www.espn.com/nfl/game/_/gameId/' + e.id);
