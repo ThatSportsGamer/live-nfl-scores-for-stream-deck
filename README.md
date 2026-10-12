@@ -188,6 +188,7 @@ Each **Live NFL Scoreboard** key is one game from this week, in kickoff order (T
 - **More keys than games:** the extra keys show `No Game`; pressing one refreshes the board and opens ESPN's full NFL scoreboard
 - **Fill order:** top-to-bottom (default) or left-to-right, set in the settings panel
 - **Finals last:** optionally move finished games to the end so live and upcoming games stay up front
+- **Tip for smaller Stream Decks** (Mini, Neo, a 15-key MK.2): turn on finals last, so live and upcoming games keep their keys and finished games move to the `+N more` key.
 - **Week change:** the board keeps this week up until Tuesday 3:00 AM ET, then moves to next week
 - **Multiple Stream Decks:** each deck (including a Virtual Stream Deck or Stream Deck Mobile) gets its own board
 
