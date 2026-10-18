@@ -4,7 +4,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your keys. Two actions: **Live NFL Scores** tracks one team per key, and **Live NFL Scoreboard** fills your keys with the whole week's games. Keys update automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.1.1-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.1.2-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
 
 ---
 
@@ -30,6 +30,9 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 
 ## Recent Updates
 
+**v1.1.2.0**
+- Live NFL Scoreboard: new custom key background color and opacity for the board, so it's easy to tell apart from another board on the same page (like a Live CFB Scoreboard with some of the same abbreviations)
+
 **v1.1.1.0**
 - Pregame keys are easier to read: the teams stack on two lines (away team on top, "@ home" below, with a small "@") and the day and time get their own lines. On game day the day line goes away and the start time is shown larger. Same on team keys and Scoreboard keys
 - Games a week or more out show the date on the day line ("Sat 10/24"), with the time underneath
@@ -48,12 +51,6 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 - Bye weeks now show `BYE WEEK` for the whole off week (Tuesday 3:00 AM ET to Tuesday 3:00 AM ET). Before, the key jumped ahead to the next game a week early
 - A team whose season is over (e.g. knocked out of the playoffs while others play on) now shows `No Game` instead of `BYE WEEK`
 - Neutral-site games (London and other international games, the Super Bowl) show `PHI vs JAX` instead of `PHI @ JAX`, on both actions
-
-**v1.0.15.0**
-- Score flash is now 5 solid blinks of the scoring team's color with no text, so it reads at a glance even on light team colors
-- New: right after the flash, a 3-second card shows the scoring team and the play — TD +6, FG +3, SAF +2 (TD +7 / TD +8 if the try lands in the same update)
-- New: when the extra point or two-point try comes in after a touchdown, a quick 2-second XP +1 / 2PT +2 card shows (no blinks)
-- Settings help text now says "key" instead of "button"
 
 Older updates: see the full version history in [CHANGELOG.md](CHANGELOG.md).
 
@@ -154,6 +151,7 @@ Each **Live NFL Scoreboard** key is one game from this week, in kickoff order (T
 - **More keys than games:** the extra keys show `No Game`; pressing one refreshes the board and opens ESPN's full NFL scoreboard
 - **Fill order:** top-to-bottom (default) or left-to-right, set in the settings panel
 - **Finals last:** optionally move finished games to the end so live and upcoming games stay up front
+- **Background color:** optionally give the whole board its own key background color and opacity, handy next to another board (like a Live CFB Scoreboard) with some of the same abbreviations
 - **Tip for smaller Stream Decks** (Mini, Neo, a 15-key MK.2): turn on finals last, so live and upcoming games keep their keys and finished games move to the `+N more` key.
 - **Week change:** the board keeps this week up until Tuesday 3:00 AM ET, then moves to next week
 - **Multiple Stream Decks:** each deck (including a Virtual Stream Deck or Stream Deck Mobile) gets its own board

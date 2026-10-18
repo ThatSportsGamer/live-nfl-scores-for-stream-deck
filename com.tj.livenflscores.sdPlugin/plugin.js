@@ -1344,15 +1344,19 @@ let   boardDebounce     = null;
 let   boardSortOrder    = 'column';  // 'column' = top→bottom, left→right | 'row'
 let   boardFinalsLast   = false;
 let   boardGames        = [];
-const BOARD_CFG         = { teamAbbr: '' };
+const BOARD_CFG         = { teamAbbr: '', bgColor: null, bgOpacity: 100 }; // bg = the board's custom key background (shared by every board key)
 
 function applyBoardSettings(settings) {
     if (!settings) return;
     if (settings.sortOrder) boardSortOrder = settings.sortOrder === 'row' ? 'row' : 'column';
     if (settings.finalsLast !== undefined) boardFinalsLast = !!settings.finalsLast;
+    // Custom background (1.1.2.0) — tells the NFL board apart from, say, a CFB
+    // board with the same abbreviations. null = default black.
+    if ('bgColor' in settings)   BOARD_CFG.bgColor   = settings.bgColor || null;
+    if (settings.bgOpacity != null) BOARD_CFG.bgOpacity = settings.bgOpacity;
 }
 
-function boardSettings() { return { sortOrder: boardSortOrder, finalsLast: boardFinalsLast }; }
+function boardSettings() { return { sortOrder: boardSortOrder, finalsLast: boardFinalsLast, bgColor: BOARD_CFG.bgColor, bgOpacity: BOARD_CFG.bgOpacity }; }
 
 function clearKeyMemory(context) {
     prevScores.delete(context); lastTd.delete(context); prevState.delete(context);
@@ -1484,13 +1488,13 @@ async function refreshBoard() {
                 const ctx = sorted[sorted.length - 1];
                 overflow.add(ctx);
                 clearKeyMemory(ctx);
-                setButton(ctx, [{ text: '+' + (games.length - slots), fs: 22, color: '#FFD700' }, { text: 'more', fs: 13, color: '#999999' }], 1.3);
+                setButton(ctx, [{ text: '+' + (games.length - slots), fs: 22, color: '#FFD700' }, { text: 'more', fs: 13, color: '#999999' }], 1.3, resolveBgColor(BOARD_CFG));
             }
         }
         boardOverflow = overflow;
     } catch (err) {
         log('Scoreboard error:', err.message);
-        for (const ctx of boardKeys.keys()) if (!flashing.has(ctx)) setButton(ctx, ['NFL', 'Err']);
+        for (const ctx of boardKeys.keys()) if (!flashing.has(ctx)) setButton(ctx, ['NFL', 'Err'], undefined, resolveBgColor(BOARD_CFG));
     } finally {
         boardRefreshing = false;
         scheduleBoard();
@@ -1502,7 +1506,7 @@ function renderBoardKey(context, game) {
     boardSlotGame.set(context, game);
     if (!game) {
         prevScores.delete(context); lastTd.delete(context); prevState.delete(context);
-        setButton(context, ['No', 'Game']);   // matches Live MLB Scoreboard
+        setButton(context, ['No', 'Game'], undefined, resolveBgColor(BOARD_CFG));   // matches Live MLB Scoreboard
         return;
     }
     presentGame(context, game, BOARD_CFG);

@@ -30,6 +30,44 @@
         .checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
         .checkbox-row input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: #4A90D9; }
         .checkbox-row label { margin-bottom: 0; color: var(--text); font-size: 12px; text-transform: none; letter-spacing: normal; cursor: pointer; }
+        .bg-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .bg-controls.disabled { opacity: .4; pointer-events: none; }
+
+        input[type="color"] {
+            width: 34px;
+            height: 28px;
+            padding: 0;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface);
+            cursor: pointer;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            accent-color: #4A90D9;
+            cursor: pointer;
+        }
+
+        .opacity-value {
+            width: 34px;
+            text-align: right;
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        .bg-hint {
+            margin-top: 6px;
+            font-size: 10.5px;
+            color: #777;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -47,6 +85,18 @@
     <label for="finalsLast">Send completed games to the end of the list</label>
 </div>
 <div style="font-size:11px;color:#888;line-height:1.5;margin:-8px 0 14px;">Tip for smaller Stream Decks (Mini, Neo, a 15-key MK.2): turn this on so live and upcoming games keep their keys and finished games move to +N more.</div>
+
+<label style="margin-top:4px;">Key Background</label>
+<div class="checkbox-row" style="margin-bottom:0;">
+    <input type="checkbox" id="bgEnabled">
+    <label for="bgEnabled">Use a custom background color for the board</label>
+</div>
+<div class="bg-controls disabled" id="bgControls">
+    <input type="color" id="bgColorInput" value="#000000"/>
+    <input type="range" id="bgOpacityInput" min="10" max="100" value="100"/>
+    <span class="opacity-value" id="bgOpacityValue">100%</span>
+</div>
+<div class="bg-hint" style="margin-bottom:14px;">Handy for telling the NFL board apart from another board on the same page, like a Live CFB Scoreboard with some of the same abbreviations. Lighter or brighter colors can make the white text harder to read.</div>
 
 <div class="info-box">
     <strong>How it works:</strong><br>
@@ -81,9 +131,16 @@
             try {
                 var data = JSON.parse(evt.data);
                 if (data.event === 'didReceiveSettings') {
-                    var s = data.payload && data.payload.settings;
-                    if (s && s.sortOrder) document.getElementById('sortOrder').value = s.sortOrder;
-                    if (s && s.finalsLast !== undefined) document.getElementById('finalsLast').checked = !!s.finalsLast;
+                    var s = (data.payload && data.payload.settings) || {};
+                    if (s.sortOrder) document.getElementById('sortOrder').value = s.sortOrder;
+                    if (s.finalsLast !== undefined) document.getElementById('finalsLast').checked = !!s.finalsLast;
+                    var on = !!s.bgColor;
+                    document.getElementById('bgEnabled').checked = on;
+                    document.getElementById('bgColorInput').value = s.bgColor || '#000000';
+                    var op = s.bgOpacity != null ? s.bgOpacity : 100;
+                    document.getElementById('bgOpacityInput').value = op;
+                    document.getElementById('bgOpacityValue').textContent = op + '%';
+                    document.getElementById('bgControls').classList.toggle('disabled', !on);
                 }
             } catch(e) {}
         };
@@ -94,6 +151,8 @@
         var settings = {
             sortOrder:  document.getElementById('sortOrder').value,
             finalsLast: document.getElementById('finalsLast').checked,
+            bgColor:    document.getElementById('bgEnabled').checked ? document.getElementById('bgColorInput').value : null,
+            bgOpacity:  parseInt(document.getElementById('bgOpacityInput').value, 10),
         };
         websocket.send(JSON.stringify({ event: 'setSettings',  context: piUUID, payload: settings }));
         websocket.send(JSON.stringify({ event: 'sendToPlugin', context: piUUID, action: actionUUID,
@@ -102,6 +161,16 @@
 
     document.getElementById('sortOrder').addEventListener('change', saveSettings);
     document.getElementById('finalsLast').addEventListener('change', saveSettings);
+    document.getElementById('bgEnabled').addEventListener('change', function() {
+        document.getElementById('bgControls').classList.toggle('disabled', !this.checked);
+        saveSettings();
+    });
+    // Save when the color picker closes, not on every drag, so the board isn't redrawn dozens of times.
+    document.getElementById('bgColorInput').addEventListener('change', saveSettings);
+    document.getElementById('bgOpacityInput').addEventListener('input', function() {
+        document.getElementById('bgOpacityValue').textContent = this.value + '%';
+    });
+    document.getElementById('bgOpacityInput').addEventListener('change', saveSettings);
 </script>
 
 <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #444; text-align: center; color: #666; font-size: 10px; line-height: 1.5;">

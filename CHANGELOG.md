@@ -2,6 +2,9 @@
 
 Full version history for Live NFL Scores, newest first. The [README](README.md) lists the three most recent updates.
 
+**v1.1.2.0**
+- Live NFL Scoreboard: new custom key background color and opacity for the board, so it's easy to tell apart from another board on the same page (like a Live CFB Scoreboard with some of the same abbreviations)
+
 **v1.1.1.0**
 - Pregame keys are easier to read: the teams stack on two lines (away team on top, "@ home" below, with a small "@") and the day and time get their own lines. On game day the day line goes away and the start time is shown larger. Same on team keys and Scoreboard keys
 - Games a week or more out show the date on the day line ("Sat 10/24"), with the time underneath
