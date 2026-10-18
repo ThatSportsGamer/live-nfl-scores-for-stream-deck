@@ -48,7 +48,7 @@ if (DEBUG_ANCHOR_DATE) log('*** TEST MODE: pretending today is ' + DEBUG_ANCHOR_
 //         state: 'preview', matchup: 'MIA @ BUF', eventId: 'debug-preview',
 //         link: 'https://www.espn.com/nfl/',
 //         awayId: '15', homeId: '2', awayAbbr: 'MIA', homeAbbr: 'BUF',
-//         time: 'Sun 1:00 PM',
+//         day: 'Sunday', time: '1:00 PM',   // day: null on game day
 //     },
 //     // Live, with possession + a normal (gold) clock line — assign to Kansas City (12)
 //     '12': {
@@ -443,7 +443,7 @@ function presentGame(context, game, cfg) {
         }
 
         const lines   = buildLines(game, cfg);
-        const spacing = lines.some(l => typeof l === 'object') ? 1.2 : 1.4;
+        const spacing = lines.spacing || (lines.some(l => typeof l === 'object') ? 1.2 : 1.4);
         log('→', JSON.stringify(lines));
 
         // Detect score change on live games and flash in the scoring team's color
@@ -551,9 +551,9 @@ function buildLines(game, cfg) {
     if (!game) return [abbr, 'No Game'];
     if (game.state === 'bye') return [abbr, 'BYE WEEK'];
 
-    if (game.state === 'preview') return [game.matchup, game.time];
-    if (game.state === 'ppd')     return [game.matchup, { text: 'PPD',   fs: 16, color: '#E74C3C' }];
-    if (game.state === 'delay')   return [game.matchup, { text: 'DELAY', fs: 14, color: '#3498DB' }];
+    if (game.state === 'preview') return pregameLines(game.awayAbbr, game.homeAbbr, game.neutral, game.day, game.time);
+    if (game.state === 'ppd')     return pregameLines(game.awayAbbr, game.homeAbbr, game.neutral, null, null, { text: 'PPD',   fs: 14, color: '#E74C3C' });
+    if (game.state === 'delay')   return pregameLines(game.awayAbbr, game.homeAbbr, game.neutral, null, null, { text: 'DELAY', fs: 14, color: '#3498DB' });
 
     if (game.state === 'live') {
         const awayBall  = !!game.possession && game.possession === String(game.awayId);
@@ -917,7 +917,7 @@ function parseEvent(e, now) {
     const gcLink = (e.links || []).find(l => (l.text || '').toLowerCase() === 'gamecast') || (e.links || [])[0];
     const link   = gcLink?.href || ('https://www.espn.com/nfl/game/_/gameId/' + e.id);
 
-    const base = { matchup, awayId, homeId, awayAbbr, homeAbbr, eventId: e.id, link };
+    const base = { matchup, awayId, homeId, awayAbbr, homeAbbr, neutral: !!comp.neutralSite, eventId: e.id, link };
 
     if (name.includes('POSTPONED') || name.includes('CANCEL')) return { ...base, state: 'ppd' };
     if (/DELAY/.test(name))                                    return { ...base, state: 'delay' };
@@ -926,7 +926,8 @@ function parseEvent(e, now) {
         // Flexed / unscheduled games (late season) carry a placeholder time
         // until the league sets it — ESPN marks those timeValid: false.
         const tbd = comp.timeValid === false || /\bTBD\b/i.test(type.shortDetail || type.detail || '');
-        return { ...base, state: 'preview', time: tbd ? 'TBD' : fmtTime(e.date, now) };
+        const when = pregameWhen(e.date, now, tbd);
+        return { ...base, state: 'preview', day: when.day, time: when.time };
     }
 
     const awayScore = parseInt(away?.score, 10) || 0;
@@ -955,28 +956,6 @@ function parseEvent(e, now) {
     };
 }
 
-function fmtTime(iso, now) {
-    try {
-        const d   = new Date(iso);
-        const day = d.toLocaleDateString([], { weekday: 'short' });
-
-        // More than ~6 days out, "Sun" alone is ambiguous (which Sunday?) — show
-        // the actual date instead of a time that's still likely to get adjusted anyway.
-        if (now) {
-            const diffDays = Math.round((d - now) / 86400000);
-            if (diffDays >= 7) {
-                const date = d.toLocaleDateString([], { month: 'numeric', day: 'numeric' });
-                return day + ' ' + date;
-            }
-        }
-
-        const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-        // Game day: just the time, same as every other plugin — the weekday
-        // only adds information when the game is on a later day this week.
-        if (now && d.toDateString() === now.toDateString()) return time;
-        return day + ' ' + time;
-    } catch (e) { return '?:??'; }
-}
 
 // ── Key-press link ─────────────────────────────────────────────────────────
 // Resolves what pressing the button should open. Defaults to (and always
@@ -1046,6 +1025,82 @@ function resolveBgColor(cfg) {
 }
 
 // Accepts an array of strings (auto-sized) or { text, fs, color } objects (explicit size).
+// ── Stacked pregame layout ────────────────────────────────────────────────────
+// Every pregame / upcoming-game key, on team keys and Scoreboard keys alike:
+//   AWAY            (16)
+//   @ HOME          (16, with a small "@" — or "vs" at neutral sites — raised
+//                    to the middle of the capitals; the whole line centered)
+//   Wednesday       (11.5, gray) — the weekday; "Sat 10/24" when 7+ days out
+//   12:00 PM        (11.5) — or TBD when the start time isn't set
+// On game day the day line goes away and the time is shown larger (14).
+// One size for every matchup in every league; settled on real hardware
+// (Windows + XL, Mac + Mini) with a separate font-test plugin, 2026-10-17.
+const PRE_TEAM_FS = 16, PRE_AT_FS = 10, PRE_DAY_FS = 11.5, PRE_TIME_FS = 11.5, PRE_GAMEDAY_TIME_FS = 14;
+const PRE_SPACING = 1.15, PRE_DAY_COLOR = '#BBBBBB', PRE_MAX_W = 66;
+// Helvetica-Bold advance widths (per 1000 em) — only used to shrink a team line
+// that can't fit at 16 (e.g. G League's RCITY / VALLEY); unknown glyphs count wide.
+const PRE_GLYPHS = {
+    A: 722, B: 722, C: 722, D: 722, E: 667, F: 611, G: 778, H: 722, I: 278,
+    J: 556, K: 722, L: 611, M: 889, N: 722, O: 778, P: 667, Q: 778, R: 722,
+    S: 667, T: 611, U: 722, V: 667, W: 944, X: 667, Y: 667, Z: 611,
+    0: 556, 1: 556, 2: 556, 3: 556, 4: 556, 5: 556, 6: 556, 7: 556, 8: 556, 9: 556,
+    '&': 778, '-': 333, '.': 278, '@': 975, v: 556, s: 556, ' ': 278,
+};
+function preWidth(str, fs) {
+    let u = 0;
+    for (const ch of String(str)) u += PRE_GLYPHS[ch] !== undefined ? PRE_GLYPHS[ch] : 800;
+    return u * fs / 1000;
+}
+function preFitFs(extraPx, text) {
+    let fs = PRE_TEAM_FS;
+    while (fs > 9 && extraPx + preWidth(text, fs) > PRE_MAX_W) fs -= 0.5;
+    return fs;
+}
+
+// Day/time text for an upcoming game, by calendar days in the viewer's local time:
+// game day → { day: null, time }, 1–6 days → { day: 'Thursday', time },
+// 7+ days → { day: 'Sat 10/24', time }. tbd → time 'TBD'.
+// A TBD game's placeholder time is often midnight Eastern, so its date is read
+// in Eastern time (otherwise it would land on the day before out West).
+function pregameWhen(iso, now, tbd) {
+    try {
+        const d = new Date(iso), n = now || new Date();
+        const tz = tbd ? { timeZone: 'America/New_York' } : {};
+        const ymd = x => Date.parse(x.toLocaleDateString('en-CA', tz) + 'T00:00:00Z'); // YYYY-MM-DD
+        const days = Math.round((ymd(d) - ymd(n)) / 86400000);
+        const time = tbd ? 'TBD' : d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        if (days <= 0) return { day: null, time };
+        if (days < 7)  return { day: d.toLocaleDateString([], { weekday: 'long', ...tz }), time };
+        return { day: d.toLocaleDateString([], { weekday: 'short', ...tz }) + ' ' + d.toLocaleDateString([], { month: 'numeric', day: 'numeric', ...tz }), time };
+    } catch (e) { return { day: null, time: tbd ? 'TBD' : '' }; }
+}
+
+// Lines for a stacked pregame key. `last` replaces the day/time lines (PPD / DELAY).
+function pregameLines(awayAbbr, homeAbbr, neutral, day, time, last) {
+    const pre = neutral ? 'vs' : '@';
+    const lines = [
+        { text: awayAbbr, fs: preFitFs(0, awayAbbr) },
+        { home: homeAbbr, pre, afs: PRE_AT_FS, fs: preFitFs(preWidth(pre + ' ', PRE_AT_FS), homeAbbr) },
+    ];
+    if (last)     lines.push(last);
+    else if (day) lines.push({ text: day, fs: PRE_DAY_FS, color: PRE_DAY_COLOR }, { text: time, fs: PRE_TIME_FS });
+    else          lines.push({ text: time, fs: PRE_GAMEDAY_TIME_FS });
+    lines.spacing = PRE_SPACING;
+    return lines;
+}
+
+// SVG for the "@ HOME" line. Stream Deck's renderer ignores dy / baseline
+// shifts, so the line is drawn twice in the same centered layout: first with
+// the "@" invisible, then with only the "@" visible, lifted so its middle sits
+// at the middle of the capitals. Both copies lay out identically on any font.
+function preHomeLineSvg(y, fs, item, color) {
+    const lift  = 0.344 * fs - 0.276 * item.afs - 0.4;
+    const attrs = `x="36" text-anchor="middle" xml:space="preserve" font-family="Helvetica Neue,Arial,sans-serif" font-size="${fs}" font-weight="600" fill="${color || 'white'}"`;
+    const pre   = escXml(item.pre + ' '), home = escXml(item.home);
+    return `<text y="${y.toFixed(2)}" ${attrs}><tspan font-size="${item.afs}" fill="none">${pre}</tspan><tspan>${home}</tspan></text>` +
+           `<text y="${(y - lift).toFixed(2)}" ${attrs}><tspan font-size="${item.afs}">${pre}</tspan><tspan fill="none">${home}</tspan></text>`;
+}
+
 function makeImage(lines, lineSpacing = 1.4, bgColor = 'black', bgOpacity = 1) {
     const W = 72, H = 72, PAD = 4, MAX_W = W - PAD * 2;
 
@@ -1081,8 +1136,9 @@ function makeImage(lines, lineSpacing = 1.4, bgColor = 'black', bgOpacity = 1) {
     // hardware.) The gap between the two segments is a `dx` offset on the
     // second tspan rather than a literal space character, since a leading
     // space in text content can get silently trimmed by some renderers.
-    const rows = items.map(({ text, fs, color, parts }, i) => {
+    const rows = items.map(({ text, fs, color, parts, home }, i) => {
         if (i > 0) y += lineHeights[i - 1] - items[i - 1].fs * 0.80 + fs * 0.80;
+        if (home !== undefined) return preHomeLineSvg(y, fs, items[i], color);
 
         if (parts && parts.length === 2) {
             // `dx` on the second tspan turned out to be silently ignored by the

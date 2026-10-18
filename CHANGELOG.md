@@ -2,6 +2,12 @@
 
 Full version history for Live NFL Scores, newest first. The [README](README.md) lists the three most recent updates.
 
+**v1.1.1.0**
+- Pregame keys are easier to read: the teams stack on two lines (away team on top, "@ home" below, with a small "@") and the day and time get their own lines. On game day the day line goes away and the start time is shown larger. Same on team keys and Scoreboard keys
+- Games a week or more out show the date on the day line ("Sat 10/24"), with the time underneath
+- Fixed: on Tuesday morning after the week flipped, a Monday night game showed its date instead of "Monday"
+- Postponed and delayed games use the same stacked layout
+
 **v1.1.0.0**
 - New: **Live NFL Scoreboard** action — drag it onto as many keys as you like and they fill with this week's games (Thursday through Monday) in kickoff order, one game per key. Same keys as the team action: possession and red zone, score flash with TD/XP/FG/SAF/2PT cards, fireworks at the final. Fill top-to-bottom or left-to-right, optionally send finals to the end, and the last key shows "+N more" if the week has more games than keys. Each Stream Deck gets its own board
 - Press a Scoreboard key to open that game in ESPN Gamecast (the box score once it's final); the "+N more" key opens ESPN's full NFL scoreboard

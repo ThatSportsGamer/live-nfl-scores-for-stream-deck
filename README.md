@@ -4,7 +4,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your keys. Two actions: **Live NFL Scores** tracks one team per key, and **Live NFL Scoreboard** fills your keys with the whole week's games. Keys update automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.1.0-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.1.1-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
 
 ---
 
@@ -13,7 +13,7 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 - **Live scores** — shows away score, home score, quarter, and game clock while a game is in progress
 - **Possession indicator** — the team with the ball is shown in brown, turning orange if they're in the red zone
 - **Two-minute warning** — the clock turns red during the final 2:00 of the 2nd and 4th quarters
-- **Pre-game** — shows the matchup (e.g. `DEN @ KC`) and scheduled kickoff day/time ("TBD" until the NFL sets it, e.g. Week 18 flex games)
+- **Pre-game** — the two teams stacked (`DEN` over `@ KC`), then the kickoff day and time ("TBD" until the NFL sets it, e.g. Week 18 flex games). On game day it's just the teams and the kickoff time
 - **Final scores** — shows the final score with a "Final" label, including OT labeling for overtime games
 - **Score-change flash** — when a team scores, the key blinks in that team's primary color, then shows a short card with the team and the play (e.g. KC / TD +6, then XP +1 when the kick is good)
 - **End-of-game fireworks** — a short celebratory animation in the winning team's colors plays when the game ends (skipped on a tie)
@@ -29,6 +29,12 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 ---
 
 ## Recent Updates
+
+**v1.1.1.0**
+- Pregame keys are easier to read: the teams stack on two lines (away team on top, "@ home" below, with a small "@") and the day and time get their own lines. On game day the day line goes away and the start time is shown larger. Same on team keys and Scoreboard keys
+- Games a week or more out show the date on the day line ("Sat 10/24"), with the time underneath
+- Fixed: on Tuesday morning after the week flipped, a Monday night game showed its date instead of "Monday"
+- Postponed and delayed games use the same stacked layout
 
 **v1.1.0.0**
 - New: **Live NFL Scoreboard** action — drag it onto as many keys as you like and they fill with this week's games (Thursday through Monday) in kickoff order, one game per key. Same keys as the team action: possession and red zone, score flash with TD/XP/FG/SAF/2PT cards, fireworks at the final. Fill top-to-bottom or left-to-right, optionally send finals to the end, and the last key shows "+N more" if the week has more games than keys. Each Stream Deck gets its own board
@@ -48,10 +54,6 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 - New: right after the flash, a 3-second card shows the scoring team and the play — TD +6, FG +3, SAF +2 (TD +7 / TD +8 if the try lands in the same update)
 - New: when the extra point or two-point try comes in after a touchdown, a quick 2-second XP +1 / 2PT +2 card shows (no blinks)
 - Settings help text now says "key" instead of "button"
-
-**v1.0.14.0**
-- Pregame key shows just the time on game day ("1:00 PM"); the weekday only appears for games later in the week
-- Score lines size up to 18pt to match the other plugins, stepping down only when a line is too wide
 
 Older updates: see the full version history in [CHANGELOG.md](CHANGELOG.md).
 
@@ -96,10 +98,19 @@ Older updates: see the full version history in [CHANGELOG.md](CHANGELOG.md).
 
 ![Live NFL Scores key states](assets/button-states.png)
 
-**Before the game:**
+**Before the game** (later in the week; the day is gray):
 ```
-DEN @ KC
-Sun 1:00 PM
+DEN
+@ KC
+Sunday
+1:00 PM
+```
+
+**Game day:**
+```
+DEN
+@ KC
+8:20 PM
 ```
 
 **Live game:**
