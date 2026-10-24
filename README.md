@@ -4,7 +4,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your keys. Two actions: **Live NFL Scores** tracks one team per key, and **Live NFL Scoreboard** fills your keys with the whole week's games. Keys update automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.1.2-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.1.3-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
 
 ---
 
@@ -30,6 +30,12 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 
 ## Recent Updates
 
+**v1.1.3.0**
+- Fixed: the week now flips at Tuesday 3:00 AM Eastern for everyone. Outside the Eastern time zone the Scoreboard could switch weeks during Monday night's game, or hold last week's games too long
+- If ESPN stops responding for a moment, keys keep showing the last scores with a small amber dot instead of "Err" (after 10 minutes without an update they show "Err")
+- Far fewer requests to ESPN when you have many keys on screen
+- Requires Stream Deck 7.1 or later
+
 **v1.1.2.0**
 - Live NFL Scoreboard: new custom key background color and opacity for the board, so it's easy to tell apart from another board on the same page (like a Live CFB Scoreboard with some of the same abbreviations)
 
@@ -39,19 +45,6 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 - Fixed: on Tuesday morning after the week flipped, a Monday night game showed its date instead of "Monday"
 - Postponed and delayed games use the same stacked layout
 
-**v1.1.0.0**
-- New: **Live NFL Scoreboard** action — drag it onto as many keys as you like and they fill with this week's games (Thursday through Monday) in kickoff order, one game per key. Same keys as the team action: possession and red zone, score flash with TD/XP/FG/SAF/2PT cards, fireworks at the final. Fill top-to-bottom or left-to-right, optionally send finals to the end, and the last key shows "+N more" if the week has more games than keys. Each Stream Deck gets its own board
-- Press a Scoreboard key to open that game in ESPN Gamecast (the box score once it's final); the "+N more" key opens ESPN's full NFL scoreboard
-- Keys past the number of games this week show "No Game" (matches Live MLB Scoreboard); pressing one refreshes the board and opens ESPN's full NFL scoreboard
-- 16 keys recommended: fits every game in any week
-- Final games now open ESPN's box score instead of Gamecast, on both actions
-- The board holds the week through Monday night and flips to next week at Tuesday 3:00 AM ET, the same rule the team keys use
-- Pregame keys show "TBD" when the NFL hasn't set the kickoff time yet (e.g. Week 18 flex games), on both actions
-- No fireworks when a game ends in a tie, on both actions
-- Bye weeks now show `BYE WEEK` for the whole off week (Tuesday 3:00 AM ET to Tuesday 3:00 AM ET). Before, the key jumped ahead to the next game a week early
-- A team whose season is over (e.g. knocked out of the playoffs while others play on) now shows `No Game` instead of `BYE WEEK`
-- Neutral-site games (London and other international games, the Super Bowl) show `PHI vs JAX` instead of `PHI @ JAX`, on both actions
-
 Older updates: see the full version history in [CHANGELOG.md](CHANGELOG.md).
 
 ---
@@ -59,7 +52,7 @@ Older updates: see the full version history in [CHANGELOG.md](CHANGELOG.md).
 ## Requirements
 
 - [Elgato Stream Deck](https://www.elgato.com/stream-deck) hardware
-- [Stream Deck software](https://www.elgato.com/downloads) version 6.9 or later (Mac or Windows)
+- [Stream Deck software](https://www.elgato.com/downloads) version 7.1 or later (Mac or Windows)
 - No account or API key required — the plugin uses ESPN's free public scoreboard API
 
 ---
