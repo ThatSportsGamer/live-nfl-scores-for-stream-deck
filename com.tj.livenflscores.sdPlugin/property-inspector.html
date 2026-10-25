@@ -226,7 +226,7 @@
 <div class="field">
     <label for="searchBox">Search</label>
     <div class="search-wrap">
-        <input type="text" id="searchBox" placeholder="e.g. Chiefs, Kansas City, Eagles…" autocomplete="off"/>
+        <input type="text" id="searchBox" placeholder="e.g. Chiefs, Kansas City, KC, Eagles…" autocomplete="off"/>
         <div class="autocomplete-list" id="autocompleteList"></div>
     </div>
 </div>
@@ -366,9 +366,23 @@
 
         if (!query) { acList.style.display = 'none'; return; }
 
-        var matches = TEAMS.filter(function(t) {
-            return t.name.toLowerCase().indexOf(query) !== -1;
+        // Rank: exact abbreviation, abbreviation prefix, name word-start, name contains.
+        // Short abbreviations are noisy as substrings, so they never match mid-string.
+        var ALIASES = {};
+        var q = query.replace(/[^a-z0-9&]/g, '');
+        var scored = [];
+        TEAMS.forEach(function(t) {
+            var ab = String(t.abbr || '').toLowerCase().replace(/[^a-z0-9&]/g, '');
+            var nm = t.name.toLowerCase();
+            var s = 0;
+            if (q && (ab === q || ALIASES[q] === t.abbr)) s = 4;
+            else if (q && ab.indexOf(q) === 0) s = 3;
+            else if (nm.indexOf(query) === 0 || nm.indexOf(' ' + query) !== -1) s = 2;
+            else if (nm.indexOf(query) !== -1) s = 1;
+            if (s) scored.push({ t: t, s: s });
         });
+        scored.sort(function(a, b) { return b.s - a.s; });   // stable: keeps list order within a rank
+        var matches = scored.map(function(x) { return x.t; });
 
         if (!matches.length) { acList.style.display = 'none'; return; }
 

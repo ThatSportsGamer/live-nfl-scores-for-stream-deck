@@ -34,6 +34,7 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 - Fixed: the week now flips at Tuesday 3:00 AM Eastern for everyone. Outside the Eastern time zone the Scoreboard could switch weeks during Monday night's game, or hold last week's games too long
 - If ESPN stops responding for a moment, keys keep showing the last scores with a small amber dot instead of "Err" (after 10 minutes without an update they show "Err")
 - Far fewer requests to ESPN when you have many keys on screen
+- Team search now also finds teams by abbreviation (try "KC" or "PHI")
 - Requires Stream Deck 7.1 or later
 
 **v1.1.2.0**
