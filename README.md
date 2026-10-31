@@ -4,7 +4,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your keys. Two actions: **Live NFL Scores** tracks one team per key, and **Live NFL Scoreboard** fills your keys with the whole week's games. Keys update automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.1.3-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.1.4-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
 
 ---
 
@@ -30,6 +30,9 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 
 ## Recent Updates
 
+**v1.1.4.0**
+- Fixed: removing a key from a Scoreboard now updates the remaining keys right away instead of up to 30 seconds later. For example, delete one of three keys on a three-game board and the last key switches to "+N more" immediately
+
 **v1.1.3.0**
 - Fixed: the week now flips at Tuesday 3:00 AM Eastern for everyone. Outside the Eastern time zone the Scoreboard could switch weeks during Monday night's game, or hold last week's games too long
 - If ESPN stops responding for a moment, keys keep showing the last scores with a small amber dot instead of "Err" (after 10 minutes without an update they show "Err")
@@ -39,12 +42,6 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 
 **v1.1.2.0**
 - Live NFL Scoreboard: new custom key background color and opacity for the board, so it's easy to tell apart from another board on the same page (like a Live CFB Scoreboard with some of the same abbreviations)
-
-**v1.1.1.0**
-- Pregame keys are easier to read: the teams stack on two lines (away team on top, "@ home" below, with a small "@") and the day and time get their own lines. On game day the day line goes away and the start time is shown larger. Same on team keys and Scoreboard keys
-- Games a week or more out show the date on the day line ("Sat 10/24"), with the time underneath
-- Fixed: on Tuesday morning after the week flipped, a Monday night game showed its date instead of "Monday"
-- Postponed and delayed games use the same stacked layout
 
 Older updates: see the full version history in [CHANGELOG.md](CHANGELOG.md).
 

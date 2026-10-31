@@ -2,6 +2,9 @@
 
 Full version history for Live NFL Scores, newest first. The [README](README.md) lists the three most recent updates.
 
+**v1.1.4.0**
+- Fixed: removing a key from a Scoreboard now updates the remaining keys right away instead of up to 30 seconds later. For example, delete one of three keys on a three-game board and the last key switches to "+N more" immediately
+
 **v1.1.3.0**
 - Fixed: the week now flips at Tuesday 3:00 AM Eastern for everyone. Outside the Eastern time zone the Scoreboard could switch weeks during Monday night's game, or hold last week's games too long
 - If ESPN stops responding for a moment, keys keep showing the last scores with a small amber dot instead of "Err" (after 10 minutes without an update they show "Err")
