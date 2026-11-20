@@ -4,7 +4,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your keys. Two actions: **Live NFL Scores** tracks one team per key, and **Live NFL Scoreboard** fills your keys with the whole week's games. Keys update automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.1.4-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.1.5-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
 
 ---
 
@@ -30,6 +30,9 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 
 ## Recent Updates
 
+**v1.1.5.0**
+- Shorter settings panels (the details are in the README)
+
 **v1.1.4.0**
 - Fixed: removing a key from a Scoreboard now updates the remaining keys right away instead of up to 30 seconds later. For example, delete one of three keys on a three-game board and the last key switches to "+N more" immediately
 
@@ -39,9 +42,6 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 - Far fewer requests to ESPN when you have many keys on screen
 - Team search now also finds teams by abbreviation (try "KC" or "PHI")
 - Requires Stream Deck 7.1 or later
-
-**v1.1.2.0**
-- Live NFL Scoreboard: new custom key background color and opacity for the board, so it's easy to tell apart from another board on the same page (like a Live CFB Scoreboard with some of the same abbreviations)
 
 Older updates: see the full version history in [CHANGELOG.md](CHANGELOG.md).
 
