@@ -45,13 +45,13 @@ const DEBUG_ANCHOR_DATE = null;
 if (DEBUG_ANCHOR_DATE) log('*** TEST MODE: pretending today is ' + DEBUG_ANCHOR_DATE + ' ***');
 
 // Keyed by teamId — skips the ESPN fetch for that team only and renders the
-// fixed game/state below instead, on whatever button that team is assigned
+// fixed game/state below instead, on whatever key that team is assigned
 // to. Every other team keeps hitting the real API as normal, so you can put
-// a different test scenario on each button at the same time (handy for
+// a different test scenario on each key at the same time (handy for
 // lining up Marketplace screenshots without waiting for real games).
-// A value of `null` forces that team's button into the "No Game" / bye-week
+// A value of `null` forces that team's key into the "No Game" / bye-week
 // state. MUST be set back to {} before shipping a release.
-// Example — five buttons, five different states at once:
+// Example — five keys, five different states at once:
 // const DEBUG_FAKE_GAMES = {
 //     // Pre-game — assign this to Buffalo (2)
 //     '2': {
@@ -275,7 +275,7 @@ function handleEvent(ev) {
             instances.set(context, (payload && payload.settings) || {});
             log('willAppear — settings:', instances.get(context));
             if (refreshTimers.has(context)) clearTimeout(refreshTimers.get(context));
-            refreshButton(context);
+            refreshKey(context);
             scheduleNextRefresh(context);
             break;
 
@@ -300,7 +300,7 @@ function handleEvent(ev) {
             instances.set(context, (payload && payload.settings) || {});
             log('didReceiveSettings:', instances.get(context));
             lastRender.delete(context); // force redraw with new settings
-            refreshButton(context);
+            refreshKey(context);
             break;
 
         case 'keyUp': {
@@ -320,7 +320,7 @@ function handleEvent(ev) {
                 } else {
                     log('keyUp — no game, no teamId, refreshing');
                     lastRender.delete(context);
-                    refreshButton(context);
+                    refreshKey(context);
                 }
             }
             break;
@@ -331,7 +331,7 @@ function handleEvent(ev) {
                 log('sendToPlugin — settings:', JSON.stringify(payload.settings));
                 instances.set(context, payload.settings);
                 lastRender.delete(context);
-                refreshButton(context);
+                refreshKey(context);
             }
             break;
     }
@@ -358,7 +358,7 @@ function nextRefreshDelay(context) {
 function scheduleNextRefresh(context) {
     const delay = nextRefreshDelay(context);
     const timer = setTimeout(async () => {
-        await refreshButton(context);
+        await refreshKey(context);
         // Only re-arm if this key is still on screen and this timer is still
         // the one it owns. A willDisappear (page/profile switch, key removed)
         // or a fresh willAppear can land while the fetch above is in flight;
@@ -370,14 +370,14 @@ function scheduleNextRefresh(context) {
     refreshTimers.set(context, timer);
 }
 
-// ── Refresh one button ────────────────────────────────────────────────────────
-async function refreshButton(context) {
+// ── Refresh one key ────────────────────────────────────────────────────────
+async function refreshKey(context) {
     if (refreshing.has(context)) { log('Refresh already in progress, skipping'); return; }
     if (flashing.has(context))   { log('Flash in progress, skipping refresh'); return; }
 
     const cfg = instances.get(context);
     if (!cfg || !cfg.teamId) {
-        setButton(context, ['Select A', 'Team In', 'Settings']);
+        setKey(context, ['Select A', 'Team In', 'Settings']);
         return;
     }
 
@@ -391,7 +391,7 @@ async function refreshButton(context) {
         presentGame(context, game, cfg);
     } catch (err) {
         log('Fetch error:', err.message);
-        setButton(context, [cfg.teamAbbr || 'NFL', 'Err'], undefined, resolveBgColor(cfg));
+        setKey(context, [cfg.teamAbbr || 'NFL', 'Err'], undefined, resolveBgColor(cfg));
     } finally {
         refreshing.delete(context);
     }
@@ -399,7 +399,7 @@ async function refreshButton(context) {
 
 // Draws one key for one game: fireworks on live → final, the possession
 // hold-over, the score flash + scoring card, or the plain score. Shared by
-// team keys (refreshButton) and Scoreboard keys (renderBoardKey). Per-key
+// team keys (refreshKey) and Scoreboard keys (renderBoardKey). Per-key
 // memory is matched by eventId, so a Scoreboard key whose slot moves to a
 // different game never compares one game's score against another's.
 function presentGame(context, game, cfg) {
@@ -488,7 +488,7 @@ function presentGame(context, game, cfg) {
                     }
                     log('Score change —', followUp ? 'try card' : 'flashing ' + color, card ? JSON.stringify(card) : '');
                     refreshing.delete(context);
-                    flashButton(context, color, lines, spacing, resolveBgColor(cfg), card, followUp).catch(e => log('flashButton error:', e.message));
+                    flashKey(context, color, lines, spacing, resolveBgColor(cfg), card, followUp).catch(e => log('flashKey error:', e.message));
                     return;
                 }
             }
@@ -497,11 +497,11 @@ function presentGame(context, game, cfg) {
             lastTd.delete(context);
         }
 
-        setButton(context, lines, spacing, resolveBgColor(cfg));
+        setKey(context, lines, spacing, resolveBgColor(cfg));
     }
 }
 
-// ── Text sizing helper — shrink font until the line fits the button width ─────
+// ── Text sizing helper — shrink font until the line fits the key width ─────
 // Uses the same real glyph-width table as the centering math (see textWidthPx
 // below) instead of a flat per-char estimate, so wide abbreviations like
 // "LAR" or "WSH" get sized just as precisely as narrow ones like "GB".
@@ -558,7 +558,7 @@ function parseClockSeconds(clockStr) {
     return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
 }
 
-// ── Build button display lines ────────────────────────────────────────────────
+// ── Build key display lines ────────────────────────────────────────────────
 function buildLines(game, cfg) {
     const abbr = cfg.teamAbbr || 'NFL';
     if (!game) return [abbr, 'No Game'];
@@ -807,12 +807,12 @@ function nextTuesday3amAfter(fromMs) {
 // ESPN's `dates=<range>` scoreboard query — previously how this plugin pulled
 // a ±10-day window in one request — started returning a flat HTTP 400 for
 // ANY multi-day range (even a single explicit one-day range), which is what
-// showed up on every button as `Err`. Only a bare request (ESPN's own notion
+// showed up on every key as `Err`. Only a bare request (ESPN's own notion
 // of "the current week") or a request scoped to `week` + `seasontype` still
 // works, so the ±10-day window is rebuilt from up to three requests instead
 // of one: this week, last week, and next week. Those three are merged into a
-// single event list and cached briefly — shared across every button's
-// refresh — so several configured buttons don't triple (or multiply further)
+// single event list and cached briefly — shared across every key's
+// refresh — so several configured keys don't triple (or multiply further)
 // the request volume against ESPN's API.
 //
 // Two more guards sit on top of the cache:
@@ -823,7 +823,7 @@ function nextTuesday3amAfter(fromMs) {
 //  • Stale fallback. If ESPN stops answering, the last good window keeps
 //    driving the keys for up to WEEK_WINDOW_STALE_MAX_MS instead of dropping
 //    every key to "Err", and a small amber dot marks them as not live (see
-//    dataStale / setButton). Retries are throttled while failing.
+//    dataStale / setKey). Retries are throttled while failing.
 let weekWindowCache     = null;
 let weekWindowCacheTime = 0;
 let weekWindowInflight  = null;
@@ -907,7 +907,7 @@ function fetchTeamGame(teamId) {
 }
 
 // Pick the single most relevant event for this team out of a multi-week scoreboard:
-// a game in progress beats an upcoming game, which beats a past final (so the button
+// a game in progress beats an upcoming game, which beats a past final (so the key
 // holds last week's result until the next game appears) — EXCEPT that a final keeps
 // beating an upcoming preview until the following Tuesday, 3:00 AM ET (see
 // nextTuesday3amAfter above). Without this, a final score gets replaced by next
@@ -1052,7 +1052,7 @@ function parseEvent(e, now) {
 
 
 // ── Key-press link ─────────────────────────────────────────────────────────
-// Resolves what pressing the button should open. Defaults to (and always
+// Resolves what pressing the key should open. Defaults to (and always
 // falls back to) ESPN Gamecast — the one link guaranteed to exist for a
 // preview, live, or final game. A configured custom link only takes over
 // once the game has actually started (live/delay/final), and hands back to
@@ -1092,7 +1092,7 @@ function buildGameUrl(game, linkType, customUrl, finalAt) {
     return gamecastUrl;
 }
 
-// ── SVG button renderer ───────────────────────────────────────────────────────
+// ── SVG key renderer ───────────────────────────────────────────────────────
 function escXml(s) {
     return String(s).replace(/[&<>"']/g, c =>
         ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
@@ -1102,7 +1102,7 @@ function escXml(s) {
 // into a CSS color the SVG <rect> can use directly. Falls back to plain black
 // for anyone who hasn't set a custom background — same look as before this
 // feature existed. This is deliberately only applied to the steady-state
-// button (pre-game/live/final/err) — the score-flash and end-of-game
+// key (pre-game/live/final/err) — the score-flash and end-of-game
 // fireworks effects keep using their own dynamic colors on top of it.
 // Returns { fill, opacity } instead of a single rgba(...) string on purpose —
 // this device's SVG renderer has already shown (see the tspan `dx` note
@@ -1289,7 +1289,7 @@ function makeFireworks(frame, winnerColor, winnerName) {
     const throb   = Math.floor(frame / 2) % 2 === 0;
     const winSize = throb ? 20 : 16;
 
-    // Auto-size team name to fit the button width
+    // Auto-size team name to fit the key width
     let nameSize = 13;
     while (nameSize > 7 && winnerName.length * nameSize * 0.62 > 62) nameSize--;
     const nameY = throb ? 25 : 27;
@@ -1322,16 +1322,16 @@ async function playFireworks(context, winnerName, winnerColor) {
         lastRender.delete(context);
         if (!keyAlive(context)) return; // key left the screen mid-animation — nothing to redraw
         // A Scoreboard key redraws its slot; a team key refetches its game.
-        // (refreshButton on a Scoreboard key would show "Select A Team".)
+        // (refreshKey on a Scoreboard key would show "Select A Team".)
         if (boardKeys.has(context)) renderBoardKey(context, boardSlotGame.get(context) || null);
-        else refreshButton(context);
+        else refreshKey(context);
     }
 }
 
 // bgColor may be a plain CSS color string (flash colors, 'black') or a
 // { fill, opacity } object (resolveBgColor's output) — normalized to the
 // latter here so makeImage always gets a fill string + numeric opacity.
-function setButton(context, lines, lineSpacing, bgColor, force) {
+function setKey(context, lines, lineSpacing, bgColor, force) {
     const bg = (bgColor && typeof bgColor === 'object') ? bgColor : { fill: bgColor || 'black', opacity: 1 };
     const key = JSON.stringify({ lines, bg, stale: dataStale });
     if (!force) {
@@ -1391,7 +1391,7 @@ function scoreCardLines(abbr, text) {
 // Score flash: 5 solid blinks of the color with no text (2.0 s), then the
 // scoring card for 3 s. A try (followUp) skips the blinks and shows its card
 // for 2 s. Then back to the score.
-async function flashButton(context, color, lines, spacing, restColor = 'black', card = null, followUp = false) {
+async function flashKey(context, color, lines, spacing, restColor = 'black', card = null, followUp = false) {
     if (flashing.has(context)) return;
     flashing.add(context);
     log('→ flash', color, card ? JSON.stringify(card) : '', followUp ? '(try)' : '');
@@ -1399,19 +1399,19 @@ async function flashButton(context, color, lines, spacing, restColor = 'black', 
         if (!(followUp && card)) {
             for (let i = 0; i < 5; i++) {
                 if (!keyAlive(context)) return; // key was removed mid-flash
-                setButton(context, [''], spacing, color, true);
+                setKey(context, [''], spacing, color, true);
                 await sleep(200);
-                setButton(context, [''], spacing, restColor, true);
+                setKey(context, [''], spacing, restColor, true);
                 await sleep(200);
             }
         }
         if (card && keyAlive(context)) {
-            setButton(context, card, 1.3, 'black', true);
+            setKey(context, card, 1.3, 'black', true);
             await sleep(followUp ? TRY_CARD_MS : SCORE_CARD_MS);
         }
     } finally {
         flashing.delete(context);
-        if (keyAlive(context)) setButton(context, lines, spacing, restColor, true);
+        if (keyAlive(context)) setKey(context, lines, spacing, restColor, true);
     }
 }
 
@@ -1589,13 +1589,13 @@ async function refreshBoard() {
                 const ctx = sorted[sorted.length - 1];
                 overflow.add(ctx);
                 clearKeyMemory(ctx);
-                setButton(ctx, [{ text: '+' + (games.length - slots), fs: 22, color: '#FFD700' }, { text: 'more', fs: 13, color: '#999999' }], 1.3, resolveBgColor(BOARD_CFG));
+                setKey(ctx, [{ text: '+' + (games.length - slots), fs: 22, color: '#FFD700' }, { text: 'more', fs: 13, color: '#999999' }], 1.3, resolveBgColor(BOARD_CFG));
             }
         }
         boardOverflow = overflow;
     } catch (err) {
         log('Scoreboard error:', err.message);
-        for (const ctx of boardKeys.keys()) if (!flashing.has(ctx)) setButton(ctx, ['NFL', 'Err'], undefined, resolveBgColor(BOARD_CFG));
+        for (const ctx of boardKeys.keys()) if (!flashing.has(ctx)) setKey(ctx, ['NFL', 'Err'], undefined, resolveBgColor(BOARD_CFG));
     } finally {
         boardRefreshing = false;
         scheduleBoard();
@@ -1607,7 +1607,7 @@ function renderBoardKey(context, game) {
     boardSlotGame.set(context, game);
     if (!game) {
         prevScores.delete(context); lastTd.delete(context); prevState.delete(context);
-        setButton(context, ['No', 'Game'], undefined, resolveBgColor(BOARD_CFG));   // matches Live MLB Scoreboard
+        setKey(context, ['No', 'Game'], undefined, resolveBgColor(BOARD_CFG));   // matches Live MLB Scoreboard
         return;
     }
     presentGame(context, game, BOARD_CFG);
