@@ -377,7 +377,7 @@ async function refreshKey(context) {
 
     const cfg = instances.get(context);
     if (!cfg || !cfg.teamId) {
-        setKey(context, ['Select A', 'Team In', 'Settings']);
+        setKey(context, ['Select a', 'Team in', 'Settings']);
         return;
     }
 
