@@ -2,6 +2,10 @@
 
 Full version history for Live NFL Scores, newest first. The [README](README.md) lists the three most recent updates.
 
+**v1.1.6.0**
+- New: preseason games get a green PRE day line: "PRE Today" on game day, "PRE Thu" within the week, and "PRE 8/7" further out
+- New: once the whole league's season is over, team keys show the team over "Offseason" instead of "No Game", and the Scoreboard shows NFL over "Offseason" on its first key, with the rest blank. A team that's off while others still play (a playoff bye, say) still shows "No Game"
+
 **v1.1.5.0**
 - Shorter settings panels (the details are in the README)
 - Behind the scenes: the code now says "key" instead of "button" throughout

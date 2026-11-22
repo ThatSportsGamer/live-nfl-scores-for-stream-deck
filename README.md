@@ -4,7 +4,7 @@
 
 A Stream Deck plugin that shows live NFL scores directly on your keys. Two actions: **Live NFL Scores** tracks one team per key, and **Live NFL Scoreboard** fills your keys with the whole week's games. Keys update automatically every 30 seconds.
 
-![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.1.5-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
+![Live NFL Scores Plugin](https://img.shields.io/badge/Stream%20Deck-Plugin-blue) ![Version](https://img.shields.io/badge/version-1.1.6-green) [![Elgato Marketplace](https://img.shields.io/badge/Elgato-Marketplace-black)](https://marketplace.elgato.com/product/live-nfl-scores-d082e710-07bc-4b5a-95dc-5e276515f937)
 
 ---
 
@@ -30,19 +30,16 @@ A Stream Deck plugin that shows live NFL scores directly on your keys. Two actio
 
 ## Recent Updates
 
+**v1.1.6.0**
+- New: preseason games get a green PRE day line: "PRE Today" on game day, "PRE Thu" within the week, and "PRE 8/7" further out
+- New: once the whole league's season is over, team keys show the team over "Offseason" instead of "No Game", and the Scoreboard shows NFL over "Offseason" on its first key, with the rest blank. A team that's off while others still play (a playoff bye, say) still shows "No Game"
+
 **v1.1.5.0**
 - Shorter settings panels (the details are in the README)
 - Behind the scenes: the code now says "key" instead of "button" throughout
 
 **v1.1.4.0**
 - Fixed: removing a key from a Scoreboard now updates the remaining keys right away instead of up to 30 seconds later. For example, delete one of three keys on a three-game board and the last key switches to "+N more" immediately
-
-**v1.1.3.0**
-- Fixed: the week now flips at Tuesday 3:00 AM Eastern for everyone. Outside the Eastern time zone the Scoreboard could switch weeks during Monday night's game, or hold last week's games too long
-- If ESPN stops responding for a moment, keys keep showing the last scores with a small amber dot instead of "Err" (after 10 minutes without an update they show "Err")
-- Far fewer requests to ESPN when you have many keys on screen
-- Team search now also finds teams by abbreviation (try "KC" or "PHI")
-- Requires Stream Deck 7.1 or later
 
 Older updates: see the full version history in [CHANGELOG.md](CHANGELOG.md).
 
@@ -124,12 +121,26 @@ BYE WEEK
 ```
 Shown for the whole off week: from the Tuesday 3:00 AM ET after the team's last game until the Tuesday 3:00 AM ET that starts the week of its next game. Pressing the key in this state opens that team's schedule on ESPN.
 
-**No game found at all** (e.g. deep off-season, or after your team's season ends):
+**Preseason** (a green PRE day line: `PRE Today`, the weekday within the week, or the date further out):
+```
+KC
+@ BUF
+PRE Thu
+8:00 PM
+```
+
+**No game found** (your team is off while others still play, such as a playoff bye or after elimination):
 ```
  KC
 No Game
 ```
-Same key behavior as a bye—pressing it opens the team's schedule on ESPN.
+
+**Offseason** (the whole league's season is over, nothing upcoming):
+```
+ KC
+Offseason
+```
+Same key behavior as a bye—pressing either opens the team's schedule on ESPN. In the offseason the Scoreboard shows NFL over `Offseason` on its first key, with the rest blank.
 
 ---
 
